@@ -12,6 +12,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
 const defaultNeo4jPassword = 'memoria-dev-password';
 
+function shouldSkipNeo4jProjection(argv, env) {
+	return argv.includes('--skip-neo4j') || env.SKIP_NEO4J_PROJECTION === '1';
+}
+
 async function loadEnvFile(filename) {
 	try {
 		const source = await readFile(path.join(rootDir, filename), 'utf8');
@@ -22,7 +26,10 @@ async function loadEnvFile(filename) {
 			if (divider === -1) continue;
 			const key = trimmed.slice(0, divider).trim();
 			const raw = trimmed.slice(divider + 1).trim();
-			const value = raw.replace(/^['"]|['"]$/g, '').split(' #')[0].trim();
+			const value = raw
+				.replace(/^['"]|['"]$/g, '')
+				.split(' #')[0]
+				.trim();
 			if (!(key in process.env)) {
 				process.env[key] = value;
 			}
@@ -44,21 +51,29 @@ async function main() {
 	const payload = generateObserveGraphMockData();
 	const client = new ConvexHttpClient(convexUrl);
 	const result = await client.action(api.observegraphSeed.importMockData, payload);
+	const skipNeo4jProjection = shouldSkipNeo4jProjection(process.argv.slice(2), process.env);
 	let neo4jProjection;
-	try {
-		neo4jProjection = await projectObserveGraphToNeo4j(payload, process.env);
-	} catch (error) {
-		if (
-			process.env.NEO4J_PASSWORD &&
-			process.env.NEO4J_PASSWORD !== defaultNeo4jPassword &&
-			String(error?.code ?? '').includes('Authentication')
-		) {
-			neo4jProjection = await projectObserveGraphToNeo4j(payload, {
-				...process.env,
-				NEO4J_PASSWORD: defaultNeo4jPassword
-			});
-		} else {
-			throw error;
+	if (skipNeo4jProjection) {
+		neo4jProjection = {
+			status: 'skipped',
+			reason: 'Neo4j projection skipped by flag or environment'
+		};
+	} else {
+		try {
+			neo4jProjection = await projectObserveGraphToNeo4j(payload, process.env);
+		} catch (error) {
+			if (
+				process.env.NEO4J_PASSWORD &&
+				process.env.NEO4J_PASSWORD !== defaultNeo4jPassword &&
+				String(error?.code ?? '').includes('Authentication')
+			) {
+				neo4jProjection = await projectObserveGraphToNeo4j(payload, {
+					...process.env,
+					NEO4J_PASSWORD: defaultNeo4jPassword
+				});
+			} else {
+				throw error;
+			}
 		}
 	}
 

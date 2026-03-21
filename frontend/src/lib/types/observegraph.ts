@@ -39,6 +39,8 @@ export type SessionSummary = {
 	taskCount: number;
 	actionCount: number;
 	gitBranch: string;
+	notes: string | null;
+	taskTitles: string[];
 };
 
 export type TemplateSummary = {
@@ -56,96 +58,80 @@ export type TemplateSummary = {
 export type GraphNodePayload = {
 	id: string;
 	label: string;
+	actionId: string;
 	toolName: string;
-	runCount: number;
-	successRate: number;
-	avgTokens: number;
-	avgLatencyMs: number;
-	tone: 'entry' | 'exit' | 'risk' | 'core';
+	type: string;
+	status: string;
+	durationMs: number;
+	totalTokens: number;
+	riskScore: number;
+	permissionLevel: string;
+	tone: 'entry' | 'exit' | 'risk' | 'write' | 'core';
 };
 
 export type GraphEdgePayload = {
 	id: string;
 	source: string;
 	target: string;
-	runCount: number;
+	label: string;
+	sourceLabel: string;
+	targetLabel: string;
+	traversalCount: number;
 	successRate: number;
-	avgTokens: number;
+	totalTokens: number;
 	avgLatencyMs: number;
 };
 
 export type TaskGraphPayload = {
-	templateId: string;
-	title: string;
-	fingerprint: string;
-	runCount: number;
-	successRate: number;
-	nodes: GraphNodePayload[];
-	edges: GraphEdgePayload[];
-};
-
-export type AuditActionRow = {
-	actionId: string;
-	sequence: number;
-	stepName: string;
-	type: string;
-	toolName: string;
-	status: string;
-	durationMs: number;
-	reasoning: string;
-	permissionLevel: string;
-	riskScore: number;
-	isFlagged: boolean;
-	command: string | null;
-	filePath: string | null;
-	stdout: string;
-	stderr: string | null;
-	totalTokens: number;
-	costUsd: number;
-	isRecovery: boolean;
-};
-
-export type AuditTrail = {
 	taskId: string;
 	title: string;
 	status: string;
+	durationMs: number;
 	totalTokens: number;
 	totalTokensLabel: string;
 	totalCostUsd: number;
 	totalCostUsdLabel: string;
-	durationMs: number;
-	actions: AuditActionRow[];
+	actionCount: number;
+	nodes: GraphNodePayload[];
+	edges: GraphEdgePayload[];
 };
 
-export type InstanceDetail = {
-	instance: {
-		slug: string;
-		name: string;
-		status: InstanceStatus;
-		environment: string;
-		modelDefault: string;
-		host: string;
-		os: string;
-		arch: string;
-		zeroclawVersion: string;
-		lastSeenAt: string;
-		lastSeenLabel: string;
-		totalTokens7dLabel: string;
-		totalCostUsd7dLabel: string;
-		metrics: {
-			sessionCount7d: number;
-			taskCount7d: number;
-			actionCount7d: number;
-			completedToday: number;
-			runningTasks: number;
-			totalTokens7d: number;
-			totalCostUsd7d: number;
-		};
-		tags: string[];
+export type SessionDetail = SessionSummary & {
+	tasks: TaskGraphPayload[];
+};
+
+export type InstanceProfile = {
+	slug: string;
+	name: string;
+	status: InstanceStatus;
+	environment: string;
+	modelDefault: string;
+	host: string;
+	os: string;
+	arch: string;
+	zeroclawVersion: string;
+	lastSeenAt: string;
+	lastSeenLabel: string;
+	totalTokens7dLabel: string;
+	totalCostUsd7dLabel: string;
+	metrics: {
+		sessionCount7d: number;
+		taskCount7d: number;
+		actionCount7d: number;
+		completedToday: number;
+		runningTasks: number;
+		totalTokens7d: number;
+		totalCostUsd7d: number;
 	};
-	sessions: SessionSummary[];
-	templates: TemplateSummary[];
-	primaryGraph: TaskGraphPayload | null;
-	auditTrail: AuditTrail | null;
+	tags: string[];
 };
 
+export type AgentOverview = {
+	instance: InstanceProfile;
+	sessions: SessionSummary[];
+};
+
+export type AgentSessionDetail = {
+	instance: InstanceProfile;
+	session: SessionDetail;
+};

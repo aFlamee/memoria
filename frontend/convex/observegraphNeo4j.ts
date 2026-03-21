@@ -1,4 +1,4 @@
-"use node";
+'use node';
 
 import neo4j, { type Session } from 'neo4j-driver';
 import { internal } from './_generated/api';
@@ -20,12 +20,24 @@ type ProjectionResult =
 	  };
 
 async function ensureConstraints(session: Session) {
-	await session.run('CREATE CONSTRAINT observegraph_instance_id IF NOT EXISTS FOR (n:Instance) REQUIRE n.instanceId IS UNIQUE');
-	await session.run('CREATE CONSTRAINT observegraph_session_id IF NOT EXISTS FOR (n:Session) REQUIRE n.sessionId IS UNIQUE');
-	await session.run('CREATE CONSTRAINT observegraph_task_id IF NOT EXISTS FOR (n:Task) REQUIRE n.taskId IS UNIQUE');
-	await session.run('CREATE CONSTRAINT observegraph_action_id IF NOT EXISTS FOR (n:Action) REQUIRE n.actionId IS UNIQUE');
-	await session.run('CREATE CONSTRAINT observegraph_template_id IF NOT EXISTS FOR (n:TaskTemplate) REQUIRE n.templateId IS UNIQUE');
-	await session.run('CREATE CONSTRAINT observegraph_step_id IF NOT EXISTS FOR (n:StepNode) REQUIRE n.stepId IS UNIQUE');
+	await session.run(
+		'CREATE CONSTRAINT observegraph_instance_id IF NOT EXISTS FOR (n:Instance) REQUIRE n.instanceId IS UNIQUE'
+	);
+	await session.run(
+		'CREATE CONSTRAINT observegraph_session_id IF NOT EXISTS FOR (n:Session) REQUIRE n.sessionId IS UNIQUE'
+	);
+	await session.run(
+		'CREATE CONSTRAINT observegraph_task_id IF NOT EXISTS FOR (n:Task) REQUIRE n.taskId IS UNIQUE'
+	);
+	await session.run(
+		'CREATE CONSTRAINT observegraph_action_id IF NOT EXISTS FOR (n:Action) REQUIRE n.actionId IS UNIQUE'
+	);
+	await session.run(
+		'CREATE CONSTRAINT observegraph_template_id IF NOT EXISTS FOR (n:TaskTemplate) REQUIRE n.templateId IS UNIQUE'
+	);
+	await session.run(
+		'CREATE CONSTRAINT observegraph_step_id IF NOT EXISTS FOR (n:StepNode) REQUIRE n.stepId IS UNIQUE'
+	);
 }
 
 export const projectAll = internalAction({
@@ -39,7 +51,10 @@ export const projectAll = internalAction({
 			return { status: 'skipped', reason: 'NEO4J_PASSWORD is not configured' };
 		}
 
-		const driver = neo4j.driver(`bolt://127.0.0.1:${boltPort}`, neo4j.auth.basic(username, password));
+		const driver = neo4j.driver(
+			`bolt://127.0.0.1:${boltPort}`,
+			neo4j.auth.basic(username, password)
+		);
 		const session = driver.session();
 
 		try {

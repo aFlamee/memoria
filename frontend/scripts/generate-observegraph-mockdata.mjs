@@ -24,7 +24,11 @@ async function main() {
 	];
 
 	for (const [filename, payload] of fileEntries) {
-		await writeFile(path.join(mockdataDir, filename), `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+		await writeFile(
+			path.join(mockdataDir, filename),
+			`${JSON.stringify(payload, null, 2)}\n`,
+			'utf8'
+		);
 	}
 
 	console.log(JSON.stringify(summarizeMockData(data), null, 2));
@@ -34,4 +38,3 @@ main().catch((error) => {
 	console.error(error);
 	process.exitCode = 1;
 });
-

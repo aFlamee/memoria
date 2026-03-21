@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import type { InstanceSummary } from '$lib/types/observegraph';
 
@@ -7,7 +8,7 @@
 
 <a
 	class="instance-tile"
-	href={`/agents/${instance.slug}`}
+	href={resolve(`/agents/${instance.slug}`)}
 	aria-label={`Open ${instance.name} details`}
 >
 	<div class="instance-tile__header">

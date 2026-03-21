@@ -1,40 +1,101 @@
 <script lang="ts">
+	import { scale } from 'svelte/transition';
 	import { onMount } from 'svelte';
-	import type { Core, ElementDefinition } from 'cytoscape';
-	import type { TaskGraphPayload } from '$lib/types/observegraph';
+	import type { Core, EdgeSingular, NodeSingular, ElementDefinition } from 'cytoscape';
+	import type {
+		GraphEdgePayload,
+		GraphNodePayload,
+		TaskGraphPayload
+	} from '$lib/types/observegraph';
 
 	let { graph }: { graph: TaskGraphPayload } = $props();
 
 	let container: HTMLDivElement;
-	let selectedId = $state<string | null>(null);
+	let cy: Core | undefined;
+	let selectedEdgeId = $state<string | null>(null);
+	let selectedNodeId = $state<string | null>(null);
+	let edgePopover = $state<{ edge: GraphEdgePayload; x: number; y: number } | null>(null);
+	let nodePopover = $state<{ node: GraphNodePayload; x: number; y: number } | null>(null);
 
-	const selectedNode = $derived(
-		selectedId ? (graph.nodes.find((node) => node.id === selectedId) ?? null) : null
-	);
-	const selectedEdge = $derived(
-		selectedId ? (graph.edges.find((edge) => edge.id === selectedId) ?? null) : null
-	);
+	function updatePopoverPositions() {
+		if (!cy) {
+			edgePopover = null;
+			nodePopover = null;
+			return;
+		}
+
+		if (selectedEdgeId) {
+			const edge = cy.getElementById(selectedEdgeId) as EdgeSingular;
+			const payload = graph.edges.find((item) => item.id === selectedEdgeId);
+			if (!payload || edge.empty()) {
+				edgePopover = null;
+			} else {
+				const midpoint = edge.renderedMidpoint();
+				edgePopover = { edge: payload, x: midpoint.x, y: midpoint.y - 18 };
+			}
+		} else {
+			edgePopover = null;
+		}
+
+		if (selectedNodeId) {
+			const node = cy.getElementById(selectedNodeId) as NodeSingular;
+			const payload = graph.nodes.find((item) => item.id === selectedNodeId);
+			if (!payload || node.empty()) {
+				nodePopover = null;
+			} else {
+				const pos = node.renderedPosition();
+				nodePopover = { node: payload, x: pos.x, y: pos.y - 14 };
+			}
+		} else {
+			nodePopover = null;
+		}
+	}
+
+	function clearSelection() {
+		selectedEdgeId = null;
+		selectedNodeId = null;
+		cy?.elements().unselect();
+		updatePopoverPositions();
+	}
+
+	function applyFocusNodeColors() {
+		if (!cy) return;
+
+		const nodes = cy.nodes();
+		if (nodes.empty()) return;
+
+		nodes.removeClass('graph-node--focus');
+		nodes.addClass('graph-node--outer');
+
+		const focusNode = nodes.toArray().reduce((currentFocus, candidate) => {
+			return candidate.connectedEdges().length > currentFocus.connectedEdges().length
+				? candidate
+				: currentFocus;
+		}, nodes[0]);
+
+		focusNode.removeClass('graph-node--outer');
+		focusNode.addClass('graph-node--focus');
+	}
 
 	onMount(() => {
-		let cy: Core | undefined;
+		let isUnmounted = false;
 
 		const initialize = async () => {
-			const [{ default: cytoscape }, { default: dagrePlugin }] = await Promise.all([
-				import('cytoscape'),
-				import('cytoscape-dagre')
-			]);
+			const { default: cytoscape } = await import('cytoscape');
 
-			cytoscape.use(dagrePlugin);
+			if (isUnmounted) return;
 
 			const elements: ElementDefinition[] = [
 				...graph.nodes.map((node) => ({
+					classes: 'graph-node',
 					data: {
 						id: node.id,
 						label: node.label,
-						runCount: node.runCount,
-						successRate: node.successRate,
-						avgTokens: node.avgTokens,
-						avgLatencyMs: node.avgLatencyMs,
+						toolName: node.toolName,
+						status: node.status,
+						totalTokens: node.totalTokens,
+						durationMs: node.durationMs,
+						riskScore: node.riskScore,
 						tone: node.tone
 					}
 				})),
@@ -43,9 +104,9 @@
 						id: edge.id,
 						source: edge.source,
 						target: edge.target,
-						runCount: edge.runCount,
+						label: edge.label,
 						successRate: edge.successRate,
-						avgTokens: edge.avgTokens,
+						totalTokens: edge.totalTokens,
 						avgLatencyMs: edge.avgLatencyMs
 					}
 				}))
@@ -55,106 +116,168 @@
 				container,
 				elements,
 				layout: {
-					name: 'dagre',
-					rankDir: 'LR',
-					nodeSep: 44,
-					rankSep: 92,
-					padding: 20
-				} as any,
+					name: 'cose',
+					animate: false,
+					nodeRepulsion: () => 6400,
+					idealEdgeLength: () => 60,
+					edgeElasticity: () => 48,
+					gravity: 0.25,
+					numIter: 500,
+					padding: 24,
+					randomize: true,
+					componentSpacing: 42,
+					nestingFactor: 1.2
+				} as never,
+				userPanningEnabled: true,
+				userZoomingEnabled: false,
+				boxSelectionEnabled: false,
+				autoungrabify: false,
 				style: [
 					{
 						selector: 'node',
 						style: {
-							label: 'data(label)',
-							'font-family': 'var(--font-body)',
-							'font-size': '11px',
-							'text-wrap': 'wrap',
-							'text-max-width': '100px',
-							'text-valign': 'center',
-							'text-halign': 'center',
-							color: '#111111',
-							'background-color': '#ece4d1',
-							'border-width': 2,
-							'border-color': '#111111',
-							width: 'mapData(avgTokens, 80, 2200, 74, 124)',
-							height: 'mapData(avgTokens, 80, 2200, 46, 86)',
-							shape: 'round-rectangle'
+							label: '',
+							width: 'mapData(totalTokens, 64, 1200, 10, 22)',
+							height: 'mapData(totalTokens, 64, 1200, 10, 22)',
+							shape: 'ellipse',
+							'background-color': 'rgba(140, 160, 220, 0.25)',
+							'border-width': 1.5,
+							'border-color': 'rgba(140, 165, 220, 0.6)',
+							'overlay-opacity': 0,
+							'transition-property': 'border-width, border-color, width, height',
+							'transition-duration': '150ms'
 						}
 					},
-					{ selector: 'node[tone = "entry"]', style: { 'background-color': '#d88d28' } },
 					{
-						selector: 'node[tone = "exit"]',
-						style: { 'background-color': '#2b8d73', color: '#f8f4eb' }
+						selector: 'node.graph-node--outer',
+						style: {
+							'background-color': 'rgba(72, 194, 136, 0.34)',
+							'border-color': 'rgba(72, 194, 136, 0.88)'
+						}
 					},
 					{
-						selector: 'node[tone = "risk"]',
-						style: { 'background-color': '#c84d35', color: '#fff7f1' }
+						selector: 'node.graph-node--focus',
+						style: {
+							'background-color': 'rgba(28, 72, 168, 0.42)',
+							'border-color': 'rgba(58, 118, 255, 0.92)',
+							'border-width': 2.2
+						}
+					},
+					{
+						selector: 'node:active',
+						style: {
+							'overlay-opacity': 0,
+							'border-width': 2.5,
+							'border-color': 'rgba(255, 255, 255, 0.6)'
+						}
+					},
+					{
+						selector: 'node:selected',
+						style: {
+							'border-width': 2.5,
+							'border-color': 'rgba(255, 255, 255, 0.8)',
+							'overlay-opacity': 0
+						}
 					},
 					{
 						selector: 'edge',
 						style: {
-							width: 'mapData(runCount, 1, 8, 1, 6)',
+							width: 0.8,
 							'curve-style': 'bezier',
+							'line-color': 'rgba(130, 100, 210, 0.28)',
 							'target-arrow-shape': 'triangle',
-							'line-color': '#313131',
-							'target-arrow-color': '#313131',
-							opacity: 0.84
+							'target-arrow-color': 'rgba(130, 100, 210, 0.32)',
+							'arrow-scale': 0.4,
+							opacity: 0.75
+						}
+					},
+					{
+						selector: 'edge:selected',
+						style: {
+							width: 1.4,
+							'line-color': 'rgba(200, 140, 255, 0.75)',
+							'target-arrow-color': 'rgba(200, 140, 255, 0.75)'
 						}
 					}
-				] as any
+				] as never
 			});
 
+			applyFocusNodeColors();
+
 			cy.on('tap', 'node', (event) => {
-				selectedId = event.target.id();
+				selectedEdgeId = null;
+				selectedNodeId = event.target.id();
+				cy?.elements().unselect();
+				event.target.select();
+				updatePopoverPositions();
 			});
+
 			cy.on('tap', 'edge', (event) => {
-				selectedId = event.target.id();
+				selectedNodeId = null;
+				selectedEdgeId = event.target.id();
+				cy?.elements().unselect();
+				event.target.select();
+				updatePopoverPositions();
 			});
+
 			cy.on('tap', (event) => {
-				if (event.target === cy) selectedId = null;
+				if (event.target === cy) clearSelection();
 			});
-			cy.fit(undefined, 28);
+
+			cy.on('pan zoom render dragfree position', updatePopoverPositions);
+			cy.fit(undefined, 14);
 		};
 
 		void initialize();
 
-		return () => cy?.destroy();
+		return () => {
+			isUnmounted = true;
+			cy?.destroy();
+		};
 	});
 </script>
 
-<section class="task-graph">
-	<div class="task-graph__header">
-		<div>
-			<h3>{graph.title}</h3>
-			<p>{graph.runCount} runs · {Math.round(graph.successRate * 100)}%</p>
-		</div>
-	</div>
+<div class="task-graph-mini">
+	<div class="task-graph-mini__canvas-shell">
+		<div
+			bind:this={container}
+			class="task-graph-mini__canvas"
+			aria-label={`${graph.title} action graph`}
+		></div>
 
-	<div class="task-graph__layout">
-		<div bind:this={container} class="task-graph__canvas" aria-label={`${graph.title} DAG`}></div>
+		{#if nodePopover}
+			<div
+				class="task-graph-mini__popover"
+				style={`left:${nodePopover.x}px; top:${nodePopover.y}px;`}
+				transition:scale={{ duration: 160, start: 0.92 }}
+			>
+				<p class="task-graph-mini__popover-title">{nodePopover.node.label}</p>
+				<p class="task-graph-mini__popover-sub">{nodePopover.node.toolName}</p>
+				<div class="task-graph-mini__popover-metrics">
+					<span>{nodePopover.node.status}</span>
+					<span>{nodePopover.node.totalTokens} tok</span>
+					<span>{nodePopover.node.durationMs}ms</span>
+					{#if nodePopover.node.riskScore >= 0.1}
+						<span>risk {Math.round(nodePopover.node.riskScore * 100)}%</span>
+					{/if}
+				</div>
+			</div>
+		{/if}
 
-		<aside class="task-graph__inspector">
-			{#if selectedNode}
-				<p class="task-graph__inspector-title">{selectedNode.label}</p>
-				<ul>
-					<li>Tool: {selectedNode.toolName}</li>
-					<li>Runs: {selectedNode.runCount}</li>
-					<li>Success: {Math.round(selectedNode.successRate * 100)}%</li>
-					<li>Avg tokens: {selectedNode.avgTokens}</li>
-					<li>Avg latency: {selectedNode.avgLatencyMs}ms</li>
-				</ul>
-			{:else if selectedEdge}
-				<p class="task-graph__inspector-title">Edge metrics</p>
-				<ul>
-					<li>Traversals: {selectedEdge.runCount}</li>
-					<li>Success: {Math.round(selectedEdge.successRate * 100)}%</li>
-					<li>Avg tokens: {selectedEdge.avgTokens}</li>
-					<li>Avg latency: {selectedEdge.avgLatencyMs}ms</li>
-				</ul>
-			{:else}
-				<p class="task-graph__inspector-title">Inspect</p>
-				<p>Tap a node.</p>
-			{/if}
-		</aside>
+		{#if edgePopover}
+			<div
+				class="task-graph-mini__popover"
+				style={`left:${edgePopover.x}px; top:${edgePopover.y}px;`}
+				transition:scale={{ duration: 160, start: 0.92 }}
+			>
+				<p class="task-graph-mini__popover-title">{edgePopover.edge.sourceLabel}</p>
+				<p class="task-graph-mini__popover-sub">{edgePopover.edge.targetLabel}</p>
+				<div class="task-graph-mini__popover-metrics">
+					<span>{Math.round(edgePopover.edge.successRate * 100)}%</span>
+					<span>{edgePopover.edge.totalTokens} tok</span>
+					<span>{edgePopover.edge.avgLatencyMs}ms</span>
+				</div>
+			</div>
+		{/if}
 	</div>
-</section>
+</div>

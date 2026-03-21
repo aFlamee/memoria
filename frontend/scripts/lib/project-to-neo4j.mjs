@@ -47,12 +47,24 @@ export async function projectObserveGraphToNeo4j(data, env) {
 
 	try {
 		await waitForConnectivity(driver);
-		await session.run('CREATE CONSTRAINT observegraph_instance_id IF NOT EXISTS FOR (n:Instance) REQUIRE n.instanceId IS UNIQUE');
-		await session.run('CREATE CONSTRAINT observegraph_session_id IF NOT EXISTS FOR (n:Session) REQUIRE n.sessionId IS UNIQUE');
-		await session.run('CREATE CONSTRAINT observegraph_task_id IF NOT EXISTS FOR (n:Task) REQUIRE n.taskId IS UNIQUE');
-		await session.run('CREATE CONSTRAINT observegraph_action_id IF NOT EXISTS FOR (n:Action) REQUIRE n.actionId IS UNIQUE');
-		await session.run('CREATE CONSTRAINT observegraph_template_id IF NOT EXISTS FOR (n:TaskTemplate) REQUIRE n.templateId IS UNIQUE');
-		await session.run('CREATE CONSTRAINT observegraph_step_id IF NOT EXISTS FOR (n:StepNode) REQUIRE n.stepId IS UNIQUE');
+		await session.run(
+			'CREATE CONSTRAINT observegraph_instance_id IF NOT EXISTS FOR (n:Instance) REQUIRE n.instanceId IS UNIQUE'
+		);
+		await session.run(
+			'CREATE CONSTRAINT observegraph_session_id IF NOT EXISTS FOR (n:Session) REQUIRE n.sessionId IS UNIQUE'
+		);
+		await session.run(
+			'CREATE CONSTRAINT observegraph_task_id IF NOT EXISTS FOR (n:Task) REQUIRE n.taskId IS UNIQUE'
+		);
+		await session.run(
+			'CREATE CONSTRAINT observegraph_action_id IF NOT EXISTS FOR (n:Action) REQUIRE n.actionId IS UNIQUE'
+		);
+		await session.run(
+			'CREATE CONSTRAINT observegraph_template_id IF NOT EXISTS FOR (n:TaskTemplate) REQUIRE n.templateId IS UNIQUE'
+		);
+		await session.run(
+			'CREATE CONSTRAINT observegraph_step_id IF NOT EXISTS FOR (n:StepNode) REQUIRE n.stepId IS UNIQUE'
+		);
 		await session.run('MATCH (n:ObserveGraph) DETACH DELETE n');
 
 		await session.run(

@@ -5,4 +5,3 @@ export async function load() {
 		dashboard: await getDashboardData()
 	};
 }
-

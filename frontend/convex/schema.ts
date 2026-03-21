@@ -37,4 +37,3 @@ export default defineSchema({
 		.index('by_templateId_and_edgeId', ['templateId', 'edgeId'])
 		.index('by_templateId_and_runCount', ['templateId', 'runCount'])
 });
-

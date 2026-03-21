@@ -1,5 +1,5 @@
 import { v } from 'convex/values';
-import { internalQuery, query } from './_generated/server';
+import { internalQuery, query, type QueryCtx } from './_generated/server';
 
 function formatRelativeTime(isoString: string) {
 	const deltaMs = Date.now() - new Date(isoString).getTime();
@@ -18,6 +18,168 @@ function compactTokens(value: number) {
 	if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
 	if (value >= 1_000) return `${Math.round(value / 1_000)}k`;
 	return `${value}`;
+}
+
+function actionTone(action: {
+	sequence: number;
+	status: string;
+	type: string;
+	riskScore: number;
+	isRecovery: boolean;
+}) {
+	if (action.sequence === 1) return 'entry' as const;
+	if (action.isRecovery) return 'exit' as const;
+	if (action.status !== 'success' || action.riskScore >= 0.2) return 'risk' as const;
+	if (action.type === 'file_write' || action.type === 'shell') return 'write' as const;
+	return 'core' as const;
+}
+
+function mapInstance(instance: {
+	slug: string;
+	name: string;
+	status: 'online' | 'offline' | 'idle';
+	environment: 'development' | 'production' | 'staging';
+	modelDefault: string;
+	host: string;
+	os: string;
+	arch: string;
+	zeroclawVersion: string;
+	lastSeenAt: string;
+	tags: string[];
+	metrics: {
+		sessionCount7d: number;
+		taskCount7d: number;
+		actionCount7d: number;
+		completedToday: number;
+		runningTasks: number;
+		totalTokens7d: number;
+		totalCostUsd7d: number;
+	};
+}) {
+	return {
+		slug: instance.slug,
+		name: instance.name,
+		status: instance.status,
+		environment: instance.environment,
+		modelDefault: instance.modelDefault,
+		host: instance.host,
+		os: instance.os,
+		arch: instance.arch,
+		zeroclawVersion: instance.zeroclawVersion,
+		lastSeenAt: instance.lastSeenAt,
+		lastSeenLabel: formatRelativeTime(instance.lastSeenAt),
+		totalTokens7dLabel: compactTokens(instance.metrics.totalTokens7d),
+		totalCostUsd7dLabel: currency(instance.metrics.totalCostUsd7d),
+		metrics: instance.metrics,
+		tags: instance.tags
+	};
+}
+
+async function getTaskTitlePreview(ctx: QueryCtx, sessionId: string) {
+	const tasks = await ctx.db
+		.query('tasks')
+		.withIndex('by_sessionId_and_startedAt', (q) => q.eq('sessionId', sessionId))
+		.order('asc')
+		.take(3);
+
+	return tasks.map((task) => task.title);
+}
+
+async function mapSessionSummary(
+	ctx: QueryCtx,
+	session: {
+		sessionId: string;
+		trigger: string;
+		status: 'running' | 'completed' | 'failed' | 'killed';
+		startedAt: string;
+		durationMs: number;
+		totalTokens: number;
+		totalCostUsd: number;
+		taskCount: number;
+		actionCount: number;
+		gitBranch: string;
+		notes: string;
+	}
+) {
+	return {
+		sessionId: session.sessionId,
+		trigger: session.trigger,
+		status: session.status,
+		startedAt: session.startedAt,
+		durationMs: session.durationMs,
+		totalTokens: session.totalTokens,
+		totalTokensLabel: compactTokens(session.totalTokens),
+		totalCostUsd: session.totalCostUsd,
+		totalCostUsdLabel: currency(session.totalCostUsd),
+		taskCount: session.taskCount,
+		actionCount: session.actionCount,
+		gitBranch: session.gitBranch,
+		notes: session.notes ?? null,
+		taskTitles: await getTaskTitlePreview(ctx, session.sessionId)
+	};
+}
+
+async function getSessionTasks(ctx: QueryCtx, sessionId: string) {
+	const sessionTasks = await ctx.db
+		.query('tasks')
+		.withIndex('by_sessionId_and_startedAt', (q) => q.eq('sessionId', sessionId))
+		.order('asc')
+		.take(12);
+
+	const tasks = [];
+	for (const task of sessionTasks) {
+		const actions = await ctx.db
+			.query('actions')
+			.withIndex('by_taskId_and_sequence', (q) => q.eq('taskId', task.taskId))
+			.order('asc')
+			.take(48);
+
+		const nodes = actions.map((action) => ({
+			id: action.actionId,
+			actionId: action.actionId,
+			label: action.stepName,
+			toolName: action.toolName,
+			type: action.type,
+			status: action.status,
+			durationMs: action.durationMs,
+			totalTokens: action.totalTokens,
+			riskScore: action.riskScore,
+			permissionLevel: action.permissionLevel,
+			tone: actionTone(action)
+		}));
+
+		const edges = actions.slice(0, -1).map((action, index) => {
+			const nextAction = actions[index + 1];
+			return {
+				id: `${action.actionId}__${nextAction.actionId}`,
+				source: action.actionId,
+				target: nextAction.actionId,
+				label: `${action.stepName} -> ${nextAction.stepName}`,
+				sourceLabel: action.stepName,
+				targetLabel: nextAction.stepName,
+				traversalCount: 1,
+				successRate: action.status === 'success' && nextAction.status === 'success' ? 1 : 0,
+				totalTokens: action.totalTokens + nextAction.totalTokens,
+				avgLatencyMs: Math.round((action.durationMs + nextAction.durationMs) / 2)
+			};
+		});
+
+		tasks.push({
+			taskId: task.taskId,
+			title: task.title,
+			status: task.status,
+			durationMs: task.durationMs,
+			totalTokens: task.totalTokens,
+			totalTokensLabel: compactTokens(task.totalTokens),
+			totalCostUsd: task.totalCostUsd,
+			totalCostUsdLabel: currency(task.totalCostUsd),
+			actionCount: task.actionCount,
+			nodes,
+			edges
+		});
+	}
+
+	return tasks;
 }
 
 export const dashboard = query({
@@ -54,10 +216,13 @@ export const dashboard = query({
 	}
 });
 
-export const instanceDetail = query({
+export const instanceOverview = query({
 	args: { slug: v.string() },
 	handler: async (ctx, args) => {
-		const instance = await ctx.db.query('instances').withIndex('by_slug', (q) => q.eq('slug', args.slug)).unique();
+		const instance = await ctx.db
+			.query('instances')
+			.withIndex('by_slug', (q) => q.eq('slug', args.slug))
+			.unique();
 		if (!instance) {
 			return null;
 		}
@@ -68,161 +233,40 @@ export const instanceDetail = query({
 			.order('desc')
 			.take(8);
 
-		const tasks = await ctx.db
-			.query('tasks')
-			.withIndex('by_instanceId_and_startedAt', (q) => q.eq('instanceId', instance.instanceId))
-			.order('desc')
-			.take(24);
+		return {
+			instance: mapInstance(instance),
+			sessions: await Promise.all(sessions.map((session) => mapSessionSummary(ctx, session)))
+		};
+	}
+});
 
-		const templateCounts = new Map<string, number>();
-		for (const task of tasks) {
-			templateCounts.set(task.templateId, (templateCounts.get(task.templateId) ?? 0) + 1);
+export const sessionDetail = query({
+	args: { slug: v.string(), sessionId: v.string() },
+	handler: async (ctx, args) => {
+		const instance = await ctx.db
+			.query('instances')
+			.withIndex('by_slug', (q) => q.eq('slug', args.slug))
+			.unique();
+		if (!instance) {
+			return null;
 		}
 
-		const sortedTemplateIds = [...templateCounts.entries()]
-			.sort((left, right) => right[1] - left[1])
-			.map(([templateId]) => templateId)
-			.slice(0, 4);
-
-		const templates = [];
-		for (const templateId of sortedTemplateIds) {
-			const template = await ctx.db
-				.query('taskTemplates')
-				.withIndex('by_templateId', (q) => q.eq('templateId', templateId))
-				.unique();
-			if (template) {
-				templates.push(template);
-			}
+		const session = await ctx.db
+			.query('sessions')
+			.withIndex('by_sessionId', (q) => q.eq('sessionId', args.sessionId))
+			.unique();
+		if (!session || session.instanceId !== instance.instanceId) {
+			return null;
 		}
 
-		const primaryTemplate = templates[0] ?? null;
-		const latestTask = tasks[0] ?? null;
-		const auditActions = latestTask
-			? await ctx.db
-					.query('actions')
-					.withIndex('by_taskId_and_sequence', (q) => q.eq('taskId', latestTask.taskId))
-					.order('asc')
-					.take(20)
-			: [];
-
-		const graphNodes = primaryTemplate
-			? await ctx.db
-					.query('stepNodes')
-					.withIndex('by_templateId_and_runCount', (q) => q.eq('templateId', primaryTemplate.templateId))
-					.order('desc')
-					.take(40)
-			: [];
-		const graphEdges = primaryTemplate
-			? await ctx.db
-					.query('stepEdges')
-					.withIndex('by_templateId_and_runCount', (q) => q.eq('templateId', primaryTemplate.templateId))
-					.order('desc')
-					.take(40)
-			: [];
+		const tasks = await getSessionTasks(ctx, session.sessionId);
 
 		return {
-			instance: {
-				slug: instance.slug,
-				name: instance.name,
-				status: instance.status,
-				environment: instance.environment,
-				modelDefault: instance.modelDefault,
-				host: instance.host,
-				os: instance.os,
-				arch: instance.arch,
-				zeroclawVersion: instance.zeroclawVersion,
-				lastSeenAt: instance.lastSeenAt,
-				lastSeenLabel: formatRelativeTime(instance.lastSeenAt),
-				totalTokens7dLabel: compactTokens(instance.metrics.totalTokens7d),
-				totalCostUsd7dLabel: currency(instance.metrics.totalCostUsd7d),
-				metrics: instance.metrics,
-				tags: instance.tags
-			},
-			sessions: sessions.map((session) => ({
-				sessionId: session.sessionId,
-				trigger: session.trigger,
-				status: session.status,
-				startedAt: session.startedAt,
-				durationMs: session.durationMs,
-				totalTokens: session.totalTokens,
-				totalTokensLabel: compactTokens(session.totalTokens),
-				totalCostUsd: session.totalCostUsd,
-				totalCostUsdLabel: currency(session.totalCostUsd),
-				taskCount: session.taskCount,
-				actionCount: session.actionCount,
-				gitBranch: session.gitBranch
-			})),
-			templates: templates.map((template) => ({
-				templateId: template.templateId,
-				title: template.title,
-				runCount: template.runCount,
-				successRate: template.successRate,
-				avgTokens: template.avgTokens,
-				avgTokensLabel: compactTokens(template.avgTokens),
-				avgDurationMs: template.avgDurationMs,
-				type: template.type,
-				tags: template.tags
-			})),
-			primaryGraph: primaryTemplate
-				? {
-						templateId: primaryTemplate.templateId,
-						title: primaryTemplate.title,
-						fingerprint: primaryTemplate.fingerprint,
-						runCount: primaryTemplate.runCount,
-						successRate: primaryTemplate.successRate,
-						nodes: graphNodes.map((node) => ({
-							id: node.stepId,
-							label: node.stepName,
-							toolName: node.toolName,
-							runCount: node.runCount,
-							successRate: node.successRate,
-							avgTokens: node.avgTokens,
-							avgLatencyMs: node.avgLatencyMs,
-							tone: node.isEntry ? 'entry' : node.isExit ? 'exit' : node.successRate < 0.7 ? 'risk' : 'core'
-						})),
-						edges: graphEdges.map((edge) => ({
-							id: edge.edgeId,
-							source: edge.fromStepId,
-							target: edge.toStepId,
-							runCount: edge.runCount,
-							successRate: edge.successRate,
-							avgTokens: edge.avgTokens,
-							avgLatencyMs: edge.avgLatencyMs
-						}))
-					}
-				: null,
-			auditTrail: latestTask
-				? {
-						taskId: latestTask.taskId,
-						title: latestTask.title,
-						status: latestTask.status,
-						totalTokens: latestTask.totalTokens,
-						totalTokensLabel: compactTokens(latestTask.totalTokens),
-						totalCostUsd: latestTask.totalCostUsd,
-						totalCostUsdLabel: currency(latestTask.totalCostUsd),
-						durationMs: latestTask.durationMs,
-						actions: auditActions.map((action) => ({
-							actionId: action.actionId,
-							sequence: action.sequence,
-							stepName: action.stepName,
-							type: action.type,
-							toolName: action.toolName,
-							status: action.status,
-							durationMs: action.durationMs,
-							reasoning: action.reasoning,
-							permissionLevel: action.permissionLevel,
-							riskScore: action.riskScore,
-							isFlagged: action.isFlagged,
-							command: action.command,
-							filePath: action.filePath,
-							stdout: action.stdout,
-							stderr: action.stderr,
-							totalTokens: action.totalTokens,
-							costUsd: action.costUsd,
-							isRecovery: action.isRecovery
-						}))
-					}
-				: null
+			instance: mapInstance(instance),
+			session: {
+				...(await mapSessionSummary(ctx, session)),
+				tasks
+			}
 		};
 	}
 });
@@ -240,4 +284,3 @@ export const neo4jProjection = internalQuery({
 		return { instances, sessions, tasks, actions, taskTemplates, stepNodes, stepEdges };
 	}
 });
-

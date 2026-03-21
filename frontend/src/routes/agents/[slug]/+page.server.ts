@@ -1,8 +1,7 @@
-import { getInstanceDetail } from '$lib/server/convex';
+import { getInstanceOverview } from '$lib/server/convex';
 
 export async function load({ params }) {
 	return {
-		agent: await getInstanceDetail(params.slug)
+		agent: await getInstanceOverview(params.slug)
 	};
 }
-

@@ -25,7 +25,7 @@
 
 <PageShell title="ObserveGraph" description="Open an instance.">
 	<section class="summary-strip" aria-label="Fleet summary">
-		{#each summary as item}
+		{#each summary as item (item.label)}
 			<div class="summary-strip__card">
 				<span>{item.label}</span>
 				<strong>{item.value}</strong>

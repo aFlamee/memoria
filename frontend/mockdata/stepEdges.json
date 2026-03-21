@@ -1,654 +1,442 @@
 [
-  {
-    "edgeId": "edge_tmpl_create_observer_crate_step_create_observer_crate_read_project_manifest_step_create_observer_crate_plan_implementation",
-    "templateId": "tmpl_create_observer_crate",
-    "fromStepId": "step_create_observer_crate_read_project_manifest",
-    "toStepId": "step_create_observer_crate_plan_implementation",
-    "runCount": 7,
-    "runIds": [
-      "run_001",
-      "run_009",
-      "run_017",
-      "run_025",
-      "run_033",
-      "run_041",
-      "run_049"
-    ],
-    "avgTokens": 1440,
-    "avgLatencyMs": 7955,
-    "successRate": 1
-  },
-  {
-    "edgeId": "edge_tmpl_create_observer_crate_step_create_observer_crate_plan_implementation_step_create_observer_crate_write_observer_library",
-    "templateId": "tmpl_create_observer_crate",
-    "fromStepId": "step_create_observer_crate_plan_implementation",
-    "toStepId": "step_create_observer_crate_write_observer_library",
-    "runCount": 7,
-    "runIds": [
-      "run_001",
-      "run_009",
-      "run_017",
-      "run_025",
-      "run_033",
-      "run_041",
-      "run_049"
-    ],
-    "avgTokens": 170,
-    "avgLatencyMs": 2629,
-    "successRate": 1
-  },
-  {
-    "edgeId": "edge_tmpl_create_observer_crate_step_create_observer_crate_write_observer_library_step_create_observer_crate_build_observer_crate",
-    "templateId": "tmpl_create_observer_crate",
-    "fromStepId": "step_create_observer_crate_write_observer_library",
-    "toStepId": "step_create_observer_crate_build_observer_crate",
-    "runCount": 4,
-    "runIds": [
-      "run_001",
-      "run_009",
-      "run_017",
-      "run_033"
-    ],
-    "avgTokens": 483,
-    "avgLatencyMs": 2204,
-    "successRate": 0.75
-  },
-  {
-    "edgeId": "edge_tmpl_capture_action_events_step_capture_action_events_inspect_tool_executor_step_capture_action_events_design_payload_envelope",
-    "templateId": "tmpl_capture_action_events",
-    "fromStepId": "step_capture_action_events_inspect_tool_executor",
-    "toStepId": "step_capture_action_events_design_payload_envelope",
-    "runCount": 7,
-    "runIds": [
-      "run_002",
-      "run_010",
-      "run_018",
-      "run_026",
-      "run_034",
-      "run_042",
-      "run_050"
-    ],
-    "avgTokens": 1598,
-    "avgLatencyMs": 12175,
-    "successRate": 1
-  },
-  {
-    "edgeId": "edge_tmpl_capture_action_events_step_capture_action_events_design_payload_envelope_step_capture_action_events_wire_event_emitters",
-    "templateId": "tmpl_capture_action_events",
-    "fromStepId": "step_capture_action_events_design_payload_envelope",
-    "toStepId": "step_capture_action_events_wire_event_emitters",
-    "runCount": 7,
-    "runIds": [
-      "run_002",
-      "run_010",
-      "run_018",
-      "run_026",
-      "run_034",
-      "run_042",
-      "run_050"
-    ],
-    "avgTokens": 270,
-    "avgLatencyMs": 1640,
-    "successRate": 1
-  },
-  {
-    "edgeId": "edge_tmpl_capture_action_events_step_capture_action_events_wire_event_emitters_step_capture_action_events_run_cargo_test_observer",
-    "templateId": "tmpl_capture_action_events",
-    "fromStepId": "step_capture_action_events_wire_event_emitters",
-    "toStepId": "step_capture_action_events_run_cargo_test_observer",
-    "runCount": 5,
-    "runIds": [
-      "run_002",
-      "run_010",
-      "run_026",
-      "run_034",
-      "run_050"
-    ],
-    "avgTokens": 465,
-    "avgLatencyMs": 1892,
-    "successRate": 1
-  },
-  {
-    "edgeId": "edge_tmpl_ship_fastapi_instance_endpoints_step_ship_fastapi_instance_endpoints_read_api_router_step_ship_fastapi_instance_endpoints_draft_pydantic_contracts",
-    "templateId": "tmpl_ship_fastapi_instance_endpoints",
-    "fromStepId": "step_ship_fastapi_instance_endpoints_read_api_router",
-    "toStepId": "step_ship_fastapi_instance_endpoints_draft_pydantic_contracts",
-    "runCount": 6,
-    "runIds": [
-      "run_003",
-      "run_011",
-      "run_019",
-      "run_027",
-      "run_035",
-      "run_043"
-    ],
-    "avgTokens": 1404,
-    "avgLatencyMs": 10796,
-    "successRate": 1
-  },
-  {
-    "edgeId": "edge_tmpl_ship_fastapi_instance_endpoints_step_ship_fastapi_instance_endpoints_draft_pydantic_contracts_step_ship_fastapi_instance_endpoints_write_instance_endpoints",
-    "templateId": "tmpl_ship_fastapi_instance_endpoints",
-    "fromStepId": "step_ship_fastapi_instance_endpoints_draft_pydantic_contracts",
-    "toStepId": "step_ship_fastapi_instance_endpoints_write_instance_endpoints",
-    "runCount": 6,
-    "runIds": [
-      "run_003",
-      "run_011",
-      "run_019",
-      "run_027",
-      "run_035",
-      "run_043"
-    ],
-    "avgTokens": 205,
-    "avgLatencyMs": 1565,
-    "successRate": 1
-  },
-  {
-    "edgeId": "edge_tmpl_ship_fastapi_instance_endpoints_step_ship_fastapi_instance_endpoints_write_instance_endpoints_step_ship_fastapi_instance_endpoints_run_pytest_instances",
-    "templateId": "tmpl_ship_fastapi_instance_endpoints",
-    "fromStepId": "step_ship_fastapi_instance_endpoints_write_instance_endpoints",
-    "toStepId": "step_ship_fastapi_instance_endpoints_run_pytest_instances",
-    "runCount": 2,
-    "runIds": [
-      "run_003",
-      "run_035"
-    ],
-    "avgTokens": 502,
-    "avgLatencyMs": 1764,
-    "successRate": 1
-  },
-  {
-    "edgeId": "edge_tmpl_merge_task_runs_into_dag_step_merge_task_runs_into_dag_inspect_cypher_merge_patterns_step_merge_task_runs_into_dag_reason_about_merge_logic",
-    "templateId": "tmpl_merge_task_runs_into_dag",
-    "fromStepId": "step_merge_task_runs_into_dag_inspect_cypher_merge_patterns",
-    "toStepId": "step_merge_task_runs_into_dag_reason_about_merge_logic",
-    "runCount": 6,
-    "runIds": [
-      "run_004",
-      "run_012",
-      "run_020",
-      "run_028",
-      "run_036",
-      "run_044"
-    ],
-    "avgTokens": 1528,
-    "avgLatencyMs": 9925,
-    "successRate": 1
-  },
-  {
-    "edgeId": "edge_tmpl_merge_task_runs_into_dag_step_merge_task_runs_into_dag_reason_about_merge_logic_step_merge_task_runs_into_dag_implement_step_merge_query",
-    "templateId": "tmpl_merge_task_runs_into_dag",
-    "fromStepId": "step_merge_task_runs_into_dag_reason_about_merge_logic",
-    "toStepId": "step_merge_task_runs_into_dag_implement_step_merge_query",
-    "runCount": 6,
-    "runIds": [
-      "run_004",
-      "run_012",
-      "run_020",
-      "run_028",
-      "run_036",
-      "run_044"
-    ],
-    "avgTokens": 241,
-    "avgLatencyMs": 1557,
-    "successRate": 1
-  },
-  {
-    "edgeId": "edge_tmpl_merge_task_runs_into_dag_step_merge_task_runs_into_dag_implement_step_merge_query_step_merge_task_runs_into_dag_repair_edge_aggregation",
-    "templateId": "tmpl_merge_task_runs_into_dag",
-    "fromStepId": "step_merge_task_runs_into_dag_implement_step_merge_query",
-    "toStepId": "step_merge_task_runs_into_dag_repair_edge_aggregation",
-    "runCount": 4,
-    "runIds": [
-      "run_004",
-      "run_020",
-      "run_028",
-      "run_044"
-    ],
-    "avgTokens": 172,
-    "avgLatencyMs": 2081,
-    "successRate": 1
-  },
-  {
-    "edgeId": "edge_tmpl_merge_task_runs_into_dag_step_merge_task_runs_into_dag_repair_edge_aggregation_step_merge_task_runs_into_dag_rerun_dag_merge_tests",
-    "templateId": "tmpl_merge_task_runs_into_dag",
-    "fromStepId": "step_merge_task_runs_into_dag_repair_edge_aggregation",
-    "toStepId": "step_merge_task_runs_into_dag_rerun_dag_merge_tests",
-    "runCount": 4,
-    "runIds": [
-      "run_004",
-      "run_020",
-      "run_028",
-      "run_044"
-    ],
-    "avgTokens": 515,
-    "avgLatencyMs": 2110,
-    "successRate": 1
-  },
-  {
-    "edgeId": "edge_tmpl_visualize_template_dag_step_visualize_template_dag_read_graph_panel_component_step_visualize_template_dag_plan_dag_interaction_model",
-    "templateId": "tmpl_visualize_template_dag",
-    "fromStepId": "step_visualize_template_dag_read_graph_panel_component",
-    "toStepId": "step_visualize_template_dag_plan_dag_interaction_model",
-    "runCount": 6,
-    "runIds": [
-      "run_005",
-      "run_013",
-      "run_021",
-      "run_029",
-      "run_037",
-      "run_045"
-    ],
-    "avgTokens": 1823,
-    "avgLatencyMs": 11145,
-    "successRate": 1
-  },
-  {
-    "edgeId": "edge_tmpl_visualize_template_dag_step_visualize_template_dag_plan_dag_interaction_model_step_visualize_template_dag_wire_cytoscape_canvas",
-    "templateId": "tmpl_visualize_template_dag",
-    "fromStepId": "step_visualize_template_dag_plan_dag_interaction_model",
-    "toStepId": "step_visualize_template_dag_wire_cytoscape_canvas",
-    "runCount": 6,
-    "runIds": [
-      "run_005",
-      "run_013",
-      "run_021",
-      "run_029",
-      "run_037",
-      "run_045"
-    ],
-    "avgTokens": 226,
-    "avgLatencyMs": 1882,
-    "successRate": 1
-  },
-  {
-    "edgeId": "edge_tmpl_visualize_template_dag_step_visualize_template_dag_wire_cytoscape_canvas_step_visualize_template_dag_tune_graph_layout_spacing",
-    "templateId": "tmpl_visualize_template_dag",
-    "fromStepId": "step_visualize_template_dag_wire_cytoscape_canvas",
-    "toStepId": "step_visualize_template_dag_tune_graph_layout_spacing",
-    "runCount": 3,
-    "runIds": [
-      "run_005",
-      "run_029",
-      "run_037"
-    ],
-    "avgTokens": 262,
-    "avgLatencyMs": 2187,
-    "successRate": 1
-  },
-  {
-    "edgeId": "edge_tmpl_visualize_template_dag_step_visualize_template_dag_tune_graph_layout_spacing_step_visualize_template_dag_rerun_svelte_check_graph",
-    "templateId": "tmpl_visualize_template_dag",
-    "fromStepId": "step_visualize_template_dag_tune_graph_layout_spacing",
-    "toStepId": "step_visualize_template_dag_rerun_svelte_check_graph",
-    "runCount": 3,
-    "runIds": [
-      "run_005",
-      "run_029",
-      "run_037"
-    ],
-    "avgTokens": 550,
-    "avgLatencyMs": 1471,
-    "successRate": 1
-  },
-  {
-    "edgeId": "edge_tmpl_audit_risk_scoring_step_audit_risk_scoring_inspect_risk_rules_step_audit_risk_scoring_evaluate_suspicious_patterns",
-    "templateId": "tmpl_audit_risk_scoring",
-    "fromStepId": "step_audit_risk_scoring_inspect_risk_rules",
-    "toStepId": "step_audit_risk_scoring_evaluate_suspicious_patterns",
-    "runCount": 6,
-    "runIds": [
-      "run_006",
-      "run_014",
-      "run_022",
-      "run_030",
-      "run_038",
-      "run_046"
-    ],
-    "avgTokens": 1664,
-    "avgLatencyMs": 5770,
-    "successRate": 1
-  },
-  {
-    "edgeId": "edge_tmpl_audit_risk_scoring_step_audit_risk_scoring_evaluate_suspicious_patterns_step_audit_risk_scoring_update_scoring_thresholds",
-    "templateId": "tmpl_audit_risk_scoring",
-    "fromStepId": "step_audit_risk_scoring_evaluate_suspicious_patterns",
-    "toStepId": "step_audit_risk_scoring_update_scoring_thresholds",
-    "runCount": 6,
-    "runIds": [
-      "run_006",
-      "run_014",
-      "run_022",
-      "run_030",
-      "run_038",
-      "run_046"
-    ],
-    "avgTokens": 192,
-    "avgLatencyMs": 2496,
-    "successRate": 1
-  },
-  {
-    "edgeId": "edge_tmpl_audit_risk_scoring_step_audit_risk_scoring_update_scoring_thresholds_step_audit_risk_scoring_flag_sudo_restart_path",
-    "templateId": "tmpl_audit_risk_scoring",
-    "fromStepId": "step_audit_risk_scoring_update_scoring_thresholds",
-    "toStepId": "step_audit_risk_scoring_flag_sudo_restart_path",
-    "runCount": 2,
-    "runIds": [
-      "run_006",
-      "run_046"
-    ],
-    "avgTokens": 232,
-    "avgLatencyMs": 1878,
-    "successRate": 1
-  },
-  {
-    "edgeId": "edge_tmpl_audit_risk_scoring_step_audit_risk_scoring_flag_sudo_restart_path_step_audit_risk_scoring_rerun_audit_validation",
-    "templateId": "tmpl_audit_risk_scoring",
-    "fromStepId": "step_audit_risk_scoring_flag_sudo_restart_path",
-    "toStepId": "step_audit_risk_scoring_rerun_audit_validation",
-    "runCount": 2,
-    "runIds": [
-      "run_006",
-      "run_046"
-    ],
-    "avgTokens": 394,
-    "avgLatencyMs": 2092,
-    "successRate": 1
-  },
-  {
-    "edgeId": "edge_tmpl_analyze_cost_breakdown_step_analyze_cost_breakdown_collect_session_usage_step_analyze_cost_breakdown_plan_aggregation_query",
-    "templateId": "tmpl_analyze_cost_breakdown",
-    "fromStepId": "step_analyze_cost_breakdown_collect_session_usage",
-    "toStepId": "step_analyze_cost_breakdown_plan_aggregation_query",
-    "runCount": 6,
-    "runIds": [
-      "run_007",
-      "run_015",
-      "run_023",
-      "run_031",
-      "run_039",
-      "run_047"
-    ],
-    "avgTokens": 1625,
-    "avgLatencyMs": 12926,
-    "successRate": 1
-  },
-  {
-    "edgeId": "edge_tmpl_analyze_cost_breakdown_step_analyze_cost_breakdown_plan_aggregation_query_step_analyze_cost_breakdown_implement_cost_views",
-    "templateId": "tmpl_analyze_cost_breakdown",
-    "fromStepId": "step_analyze_cost_breakdown_plan_aggregation_query",
-    "toStepId": "step_analyze_cost_breakdown_implement_cost_views",
-    "runCount": 6,
-    "runIds": [
-      "run_007",
-      "run_015",
-      "run_023",
-      "run_031",
-      "run_039",
-      "run_047"
-    ],
-    "avgTokens": 193,
-    "avgLatencyMs": 2511,
-    "successRate": 1
-  },
-  {
-    "edgeId": "edge_tmpl_analyze_cost_breakdown_step_analyze_cost_breakdown_implement_cost_views_step_analyze_cost_breakdown_run_usage_snapshot",
-    "templateId": "tmpl_analyze_cost_breakdown",
-    "fromStepId": "step_analyze_cost_breakdown_implement_cost_views",
-    "toStepId": "step_analyze_cost_breakdown_run_usage_snapshot",
-    "runCount": 3,
-    "runIds": [
-      "run_007",
-      "run_015",
-      "run_047"
-    ],
-    "avgTokens": 506,
-    "avgLatencyMs": 3498,
-    "successRate": 1
-  },
-  {
-    "edgeId": "edge_tmpl_stream_weekly_instance_usage_step_stream_weekly_instance_usage_inspect_usage_query_step_stream_weekly_instance_usage_shape_instance_summary_payload",
-    "templateId": "tmpl_stream_weekly_instance_usage",
-    "fromStepId": "step_stream_weekly_instance_usage_inspect_usage_query",
-    "toStepId": "step_stream_weekly_instance_usage_shape_instance_summary_payload",
-    "runCount": 6,
-    "runIds": [
-      "run_008",
-      "run_016",
-      "run_024",
-      "run_032",
-      "run_040",
-      "run_048"
-    ],
-    "avgTokens": 1457,
-    "avgLatencyMs": 5868,
-    "successRate": 1
-  },
-  {
-    "edgeId": "edge_tmpl_stream_weekly_instance_usage_step_stream_weekly_instance_usage_shape_instance_summary_payload_step_stream_weekly_instance_usage_write_weekly_usage_endpoint",
-    "templateId": "tmpl_stream_weekly_instance_usage",
-    "fromStepId": "step_stream_weekly_instance_usage_shape_instance_summary_payload",
-    "toStepId": "step_stream_weekly_instance_usage_write_weekly_usage_endpoint",
-    "runCount": 6,
-    "runIds": [
-      "run_008",
-      "run_016",
-      "run_024",
-      "run_032",
-      "run_040",
-      "run_048"
-    ],
-    "avgTokens": 168,
-    "avgLatencyMs": 1400,
-    "successRate": 1
-  },
-  {
-    "edgeId": "edge_tmpl_stream_weekly_instance_usage_step_stream_weekly_instance_usage_write_weekly_usage_endpoint_step_stream_weekly_instance_usage_run_weekly_usage_smoke_test",
-    "templateId": "tmpl_stream_weekly_instance_usage",
-    "fromStepId": "step_stream_weekly_instance_usage_write_weekly_usage_endpoint",
-    "toStepId": "step_stream_weekly_instance_usage_run_weekly_usage_smoke_test",
-    "runCount": 5,
-    "runIds": [
-      "run_008",
-      "run_016",
-      "run_024",
-      "run_040",
-      "run_048"
-    ],
-    "avgTokens": 577,
-    "avgLatencyMs": 2375,
-    "successRate": 1
-  },
-  {
-    "edgeId": "edge_tmpl_ship_fastapi_instance_endpoints_step_ship_fastapi_instance_endpoints_write_instance_endpoints_step_ship_fastapi_instance_endpoints_adjust_heartbeat_validation",
-    "templateId": "tmpl_ship_fastapi_instance_endpoints",
-    "fromStepId": "step_ship_fastapi_instance_endpoints_write_instance_endpoints",
-    "toStepId": "step_ship_fastapi_instance_endpoints_adjust_heartbeat_validation",
-    "runCount": 4,
-    "runIds": [
-      "run_011",
-      "run_019",
-      "run_027",
-      "run_043"
-    ],
-    "avgTokens": 267,
-    "avgLatencyMs": 2377,
-    "successRate": 1
-  },
-  {
-    "edgeId": "edge_tmpl_ship_fastapi_instance_endpoints_step_ship_fastapi_instance_endpoints_adjust_heartbeat_validation_step_ship_fastapi_instance_endpoints_rerun_pytest_instances",
-    "templateId": "tmpl_ship_fastapi_instance_endpoints",
-    "fromStepId": "step_ship_fastapi_instance_endpoints_adjust_heartbeat_validation",
-    "toStepId": "step_ship_fastapi_instance_endpoints_rerun_pytest_instances",
-    "runCount": 4,
-    "runIds": [
-      "run_011",
-      "run_019",
-      "run_027",
-      "run_043"
-    ],
-    "avgTokens": 562,
-    "avgLatencyMs": 1918,
-    "successRate": 1
-  },
-  {
-    "edgeId": "edge_tmpl_merge_task_runs_into_dag_step_merge_task_runs_into_dag_implement_step_merge_query_step_merge_task_runs_into_dag_run_dag_merge_tests",
-    "templateId": "tmpl_merge_task_runs_into_dag",
-    "fromStepId": "step_merge_task_runs_into_dag_implement_step_merge_query",
-    "toStepId": "step_merge_task_runs_into_dag_run_dag_merge_tests",
-    "runCount": 2,
-    "runIds": [
-      "run_012",
-      "run_036"
-    ],
-    "avgTokens": 212,
-    "avgLatencyMs": 1843,
-    "successRate": 0.5
-  },
-  {
-    "edgeId": "edge_tmpl_visualize_template_dag_step_visualize_template_dag_wire_cytoscape_canvas_step_visualize_template_dag_run_svelte_check_graph",
-    "templateId": "tmpl_visualize_template_dag",
-    "fromStepId": "step_visualize_template_dag_wire_cytoscape_canvas",
-    "toStepId": "step_visualize_template_dag_run_svelte_check_graph",
-    "runCount": 3,
-    "runIds": [
-      "run_013",
-      "run_021",
-      "run_045"
-    ],
-    "avgTokens": 495,
-    "avgLatencyMs": 1137,
-    "successRate": 0.67
-  },
-  {
-    "edgeId": "edge_tmpl_audit_risk_scoring_step_audit_risk_scoring_update_scoring_thresholds_step_audit_risk_scoring_run_audit_validation",
-    "templateId": "tmpl_audit_risk_scoring",
-    "fromStepId": "step_audit_risk_scoring_update_scoring_thresholds",
-    "toStepId": "step_audit_risk_scoring_run_audit_validation",
-    "runCount": 4,
-    "runIds": [
-      "run_014",
-      "run_022",
-      "run_030",
-      "run_038"
-    ],
-    "avgTokens": 338,
-    "avgLatencyMs": 2444,
-    "successRate": 1
-  },
-  {
-    "edgeId": "edge_tmpl_capture_action_events_step_capture_action_events_wire_event_emitters_step_capture_action_events_patch_retry_semantics",
-    "templateId": "tmpl_capture_action_events",
-    "fromStepId": "step_capture_action_events_wire_event_emitters",
-    "toStepId": "step_capture_action_events_patch_retry_semantics",
-    "runCount": 2,
-    "runIds": [
-      "run_018",
-      "run_042"
-    ],
-    "avgTokens": 232,
-    "avgLatencyMs": 932,
-    "successRate": 1
-  },
-  {
-    "edgeId": "edge_tmpl_capture_action_events_step_capture_action_events_patch_retry_semantics_step_capture_action_events_rerun_cargo_test_observer",
-    "templateId": "tmpl_capture_action_events",
-    "fromStepId": "step_capture_action_events_patch_retry_semantics",
-    "toStepId": "step_capture_action_events_rerun_cargo_test_observer",
-    "runCount": 2,
-    "runIds": [
-      "run_018",
-      "run_042"
-    ],
-    "avgTokens": 229,
-    "avgLatencyMs": 1813,
-    "successRate": 1
-  },
-  {
-    "edgeId": "edge_tmpl_analyze_cost_breakdown_step_analyze_cost_breakdown_implement_cost_views_step_analyze_cost_breakdown_tighten_token_grouping",
-    "templateId": "tmpl_analyze_cost_breakdown",
-    "fromStepId": "step_analyze_cost_breakdown_implement_cost_views",
-    "toStepId": "step_analyze_cost_breakdown_tighten_token_grouping",
-    "runCount": 3,
-    "runIds": [
-      "run_023",
-      "run_031",
-      "run_039"
-    ],
-    "avgTokens": 186,
-    "avgLatencyMs": 3072,
-    "successRate": 1
-  },
-  {
-    "edgeId": "edge_tmpl_analyze_cost_breakdown_step_analyze_cost_breakdown_tighten_token_grouping_step_analyze_cost_breakdown_rerun_usage_snapshot",
-    "templateId": "tmpl_analyze_cost_breakdown",
-    "fromStepId": "step_analyze_cost_breakdown_tighten_token_grouping",
-    "toStepId": "step_analyze_cost_breakdown_rerun_usage_snapshot",
-    "runCount": 3,
-    "runIds": [
-      "run_023",
-      "run_031",
-      "run_039"
-    ],
-    "avgTokens": 513,
-    "avgLatencyMs": 2004,
-    "successRate": 1
-  },
-  {
-    "edgeId": "edge_tmpl_create_observer_crate_step_create_observer_crate_write_observer_library_step_create_observer_crate_fix_type_mismatch",
-    "templateId": "tmpl_create_observer_crate",
-    "fromStepId": "step_create_observer_crate_write_observer_library",
-    "toStepId": "step_create_observer_crate_fix_type_mismatch",
-    "runCount": 3,
-    "runIds": [
-      "run_025",
-      "run_041",
-      "run_049"
-    ],
-    "avgTokens": 164,
-    "avgLatencyMs": 1807,
-    "successRate": 1
-  },
-  {
-    "edgeId": "edge_tmpl_create_observer_crate_step_create_observer_crate_fix_type_mismatch_step_create_observer_crate_build_final_crate",
-    "templateId": "tmpl_create_observer_crate",
-    "fromStepId": "step_create_observer_crate_fix_type_mismatch",
-    "toStepId": "step_create_observer_crate_build_final_crate",
-    "runCount": 3,
-    "runIds": [
-      "run_025",
-      "run_041",
-      "run_049"
-    ],
-    "avgTokens": 467,
-    "avgLatencyMs": 1134,
-    "successRate": 1
-  },
-  {
-    "edgeId": "edge_tmpl_stream_weekly_instance_usage_step_stream_weekly_instance_usage_write_weekly_usage_endpoint_step_stream_weekly_instance_usage_backfill_missing_idle_states",
-    "templateId": "tmpl_stream_weekly_instance_usage",
-    "fromStepId": "step_stream_weekly_instance_usage_write_weekly_usage_endpoint",
-    "toStepId": "step_stream_weekly_instance_usage_backfill_missing_idle_states",
-    "runCount": 1,
-    "runIds": [
-      "run_032"
-    ],
-    "avgTokens": 129,
-    "avgLatencyMs": 2302,
-    "successRate": 1
-  },
-  {
-    "edgeId": "edge_tmpl_stream_weekly_instance_usage_step_stream_weekly_instance_usage_backfill_missing_idle_states_step_stream_weekly_instance_usage_rerun_weekly_usage_smoke_test",
-    "templateId": "tmpl_stream_weekly_instance_usage",
-    "fromStepId": "step_stream_weekly_instance_usage_backfill_missing_idle_states",
-    "toStepId": "step_stream_weekly_instance_usage_rerun_weekly_usage_smoke_test",
-    "runCount": 1,
-    "runIds": [
-      "run_032"
-    ],
-    "avgTokens": 473,
-    "avgLatencyMs": 1227,
-    "successRate": 1
-  }
+	{
+		"edgeId": "edge_tmpl_create_observer_crate_step_create_observer_crate_read_project_manifest_step_create_observer_crate_plan_implementation",
+		"templateId": "tmpl_create_observer_crate",
+		"fromStepId": "step_create_observer_crate_read_project_manifest",
+		"toStepId": "step_create_observer_crate_plan_implementation",
+		"runCount": 7,
+		"runIds": ["run_001", "run_009", "run_017", "run_025", "run_033", "run_041", "run_049"],
+		"avgTokens": 1440,
+		"avgLatencyMs": 7955,
+		"successRate": 1
+	},
+	{
+		"edgeId": "edge_tmpl_create_observer_crate_step_create_observer_crate_plan_implementation_step_create_observer_crate_write_observer_library",
+		"templateId": "tmpl_create_observer_crate",
+		"fromStepId": "step_create_observer_crate_plan_implementation",
+		"toStepId": "step_create_observer_crate_write_observer_library",
+		"runCount": 7,
+		"runIds": ["run_001", "run_009", "run_017", "run_025", "run_033", "run_041", "run_049"],
+		"avgTokens": 170,
+		"avgLatencyMs": 2629,
+		"successRate": 1
+	},
+	{
+		"edgeId": "edge_tmpl_create_observer_crate_step_create_observer_crate_write_observer_library_step_create_observer_crate_build_observer_crate",
+		"templateId": "tmpl_create_observer_crate",
+		"fromStepId": "step_create_observer_crate_write_observer_library",
+		"toStepId": "step_create_observer_crate_build_observer_crate",
+		"runCount": 4,
+		"runIds": ["run_001", "run_009", "run_017", "run_033"],
+		"avgTokens": 483,
+		"avgLatencyMs": 2204,
+		"successRate": 0.75
+	},
+	{
+		"edgeId": "edge_tmpl_capture_action_events_step_capture_action_events_inspect_tool_executor_step_capture_action_events_design_payload_envelope",
+		"templateId": "tmpl_capture_action_events",
+		"fromStepId": "step_capture_action_events_inspect_tool_executor",
+		"toStepId": "step_capture_action_events_design_payload_envelope",
+		"runCount": 7,
+		"runIds": ["run_002", "run_010", "run_018", "run_026", "run_034", "run_042", "run_050"],
+		"avgTokens": 1598,
+		"avgLatencyMs": 12175,
+		"successRate": 1
+	},
+	{
+		"edgeId": "edge_tmpl_capture_action_events_step_capture_action_events_design_payload_envelope_step_capture_action_events_wire_event_emitters",
+		"templateId": "tmpl_capture_action_events",
+		"fromStepId": "step_capture_action_events_design_payload_envelope",
+		"toStepId": "step_capture_action_events_wire_event_emitters",
+		"runCount": 7,
+		"runIds": ["run_002", "run_010", "run_018", "run_026", "run_034", "run_042", "run_050"],
+		"avgTokens": 270,
+		"avgLatencyMs": 1640,
+		"successRate": 1
+	},
+	{
+		"edgeId": "edge_tmpl_capture_action_events_step_capture_action_events_wire_event_emitters_step_capture_action_events_run_cargo_test_observer",
+		"templateId": "tmpl_capture_action_events",
+		"fromStepId": "step_capture_action_events_wire_event_emitters",
+		"toStepId": "step_capture_action_events_run_cargo_test_observer",
+		"runCount": 5,
+		"runIds": ["run_002", "run_010", "run_026", "run_034", "run_050"],
+		"avgTokens": 465,
+		"avgLatencyMs": 1892,
+		"successRate": 1
+	},
+	{
+		"edgeId": "edge_tmpl_ship_fastapi_instance_endpoints_step_ship_fastapi_instance_endpoints_read_api_router_step_ship_fastapi_instance_endpoints_draft_pydantic_contracts",
+		"templateId": "tmpl_ship_fastapi_instance_endpoints",
+		"fromStepId": "step_ship_fastapi_instance_endpoints_read_api_router",
+		"toStepId": "step_ship_fastapi_instance_endpoints_draft_pydantic_contracts",
+		"runCount": 6,
+		"runIds": ["run_003", "run_011", "run_019", "run_027", "run_035", "run_043"],
+		"avgTokens": 1404,
+		"avgLatencyMs": 10796,
+		"successRate": 1
+	},
+	{
+		"edgeId": "edge_tmpl_ship_fastapi_instance_endpoints_step_ship_fastapi_instance_endpoints_draft_pydantic_contracts_step_ship_fastapi_instance_endpoints_write_instance_endpoints",
+		"templateId": "tmpl_ship_fastapi_instance_endpoints",
+		"fromStepId": "step_ship_fastapi_instance_endpoints_draft_pydantic_contracts",
+		"toStepId": "step_ship_fastapi_instance_endpoints_write_instance_endpoints",
+		"runCount": 6,
+		"runIds": ["run_003", "run_011", "run_019", "run_027", "run_035", "run_043"],
+		"avgTokens": 205,
+		"avgLatencyMs": 1565,
+		"successRate": 1
+	},
+	{
+		"edgeId": "edge_tmpl_ship_fastapi_instance_endpoints_step_ship_fastapi_instance_endpoints_write_instance_endpoints_step_ship_fastapi_instance_endpoints_run_pytest_instances",
+		"templateId": "tmpl_ship_fastapi_instance_endpoints",
+		"fromStepId": "step_ship_fastapi_instance_endpoints_write_instance_endpoints",
+		"toStepId": "step_ship_fastapi_instance_endpoints_run_pytest_instances",
+		"runCount": 2,
+		"runIds": ["run_003", "run_035"],
+		"avgTokens": 502,
+		"avgLatencyMs": 1764,
+		"successRate": 1
+	},
+	{
+		"edgeId": "edge_tmpl_merge_task_runs_into_dag_step_merge_task_runs_into_dag_inspect_cypher_merge_patterns_step_merge_task_runs_into_dag_reason_about_merge_logic",
+		"templateId": "tmpl_merge_task_runs_into_dag",
+		"fromStepId": "step_merge_task_runs_into_dag_inspect_cypher_merge_patterns",
+		"toStepId": "step_merge_task_runs_into_dag_reason_about_merge_logic",
+		"runCount": 6,
+		"runIds": ["run_004", "run_012", "run_020", "run_028", "run_036", "run_044"],
+		"avgTokens": 1528,
+		"avgLatencyMs": 9925,
+		"successRate": 1
+	},
+	{
+		"edgeId": "edge_tmpl_merge_task_runs_into_dag_step_merge_task_runs_into_dag_reason_about_merge_logic_step_merge_task_runs_into_dag_implement_step_merge_query",
+		"templateId": "tmpl_merge_task_runs_into_dag",
+		"fromStepId": "step_merge_task_runs_into_dag_reason_about_merge_logic",
+		"toStepId": "step_merge_task_runs_into_dag_implement_step_merge_query",
+		"runCount": 6,
+		"runIds": ["run_004", "run_012", "run_020", "run_028", "run_036", "run_044"],
+		"avgTokens": 241,
+		"avgLatencyMs": 1557,
+		"successRate": 1
+	},
+	{
+		"edgeId": "edge_tmpl_merge_task_runs_into_dag_step_merge_task_runs_into_dag_implement_step_merge_query_step_merge_task_runs_into_dag_repair_edge_aggregation",
+		"templateId": "tmpl_merge_task_runs_into_dag",
+		"fromStepId": "step_merge_task_runs_into_dag_implement_step_merge_query",
+		"toStepId": "step_merge_task_runs_into_dag_repair_edge_aggregation",
+		"runCount": 4,
+		"runIds": ["run_004", "run_020", "run_028", "run_044"],
+		"avgTokens": 172,
+		"avgLatencyMs": 2081,
+		"successRate": 1
+	},
+	{
+		"edgeId": "edge_tmpl_merge_task_runs_into_dag_step_merge_task_runs_into_dag_repair_edge_aggregation_step_merge_task_runs_into_dag_rerun_dag_merge_tests",
+		"templateId": "tmpl_merge_task_runs_into_dag",
+		"fromStepId": "step_merge_task_runs_into_dag_repair_edge_aggregation",
+		"toStepId": "step_merge_task_runs_into_dag_rerun_dag_merge_tests",
+		"runCount": 4,
+		"runIds": ["run_004", "run_020", "run_028", "run_044"],
+		"avgTokens": 515,
+		"avgLatencyMs": 2110,
+		"successRate": 1
+	},
+	{
+		"edgeId": "edge_tmpl_visualize_template_dag_step_visualize_template_dag_read_graph_panel_component_step_visualize_template_dag_plan_dag_interaction_model",
+		"templateId": "tmpl_visualize_template_dag",
+		"fromStepId": "step_visualize_template_dag_read_graph_panel_component",
+		"toStepId": "step_visualize_template_dag_plan_dag_interaction_model",
+		"runCount": 6,
+		"runIds": ["run_005", "run_013", "run_021", "run_029", "run_037", "run_045"],
+		"avgTokens": 1823,
+		"avgLatencyMs": 11145,
+		"successRate": 1
+	},
+	{
+		"edgeId": "edge_tmpl_visualize_template_dag_step_visualize_template_dag_plan_dag_interaction_model_step_visualize_template_dag_wire_cytoscape_canvas",
+		"templateId": "tmpl_visualize_template_dag",
+		"fromStepId": "step_visualize_template_dag_plan_dag_interaction_model",
+		"toStepId": "step_visualize_template_dag_wire_cytoscape_canvas",
+		"runCount": 6,
+		"runIds": ["run_005", "run_013", "run_021", "run_029", "run_037", "run_045"],
+		"avgTokens": 226,
+		"avgLatencyMs": 1882,
+		"successRate": 1
+	},
+	{
+		"edgeId": "edge_tmpl_visualize_template_dag_step_visualize_template_dag_wire_cytoscape_canvas_step_visualize_template_dag_tune_graph_layout_spacing",
+		"templateId": "tmpl_visualize_template_dag",
+		"fromStepId": "step_visualize_template_dag_wire_cytoscape_canvas",
+		"toStepId": "step_visualize_template_dag_tune_graph_layout_spacing",
+		"runCount": 3,
+		"runIds": ["run_005", "run_029", "run_037"],
+		"avgTokens": 262,
+		"avgLatencyMs": 2187,
+		"successRate": 1
+	},
+	{
+		"edgeId": "edge_tmpl_visualize_template_dag_step_visualize_template_dag_tune_graph_layout_spacing_step_visualize_template_dag_rerun_svelte_check_graph",
+		"templateId": "tmpl_visualize_template_dag",
+		"fromStepId": "step_visualize_template_dag_tune_graph_layout_spacing",
+		"toStepId": "step_visualize_template_dag_rerun_svelte_check_graph",
+		"runCount": 3,
+		"runIds": ["run_005", "run_029", "run_037"],
+		"avgTokens": 550,
+		"avgLatencyMs": 1471,
+		"successRate": 1
+	},
+	{
+		"edgeId": "edge_tmpl_audit_risk_scoring_step_audit_risk_scoring_inspect_risk_rules_step_audit_risk_scoring_evaluate_suspicious_patterns",
+		"templateId": "tmpl_audit_risk_scoring",
+		"fromStepId": "step_audit_risk_scoring_inspect_risk_rules",
+		"toStepId": "step_audit_risk_scoring_evaluate_suspicious_patterns",
+		"runCount": 6,
+		"runIds": ["run_006", "run_014", "run_022", "run_030", "run_038", "run_046"],
+		"avgTokens": 1664,
+		"avgLatencyMs": 5770,
+		"successRate": 1
+	},
+	{
+		"edgeId": "edge_tmpl_audit_risk_scoring_step_audit_risk_scoring_evaluate_suspicious_patterns_step_audit_risk_scoring_update_scoring_thresholds",
+		"templateId": "tmpl_audit_risk_scoring",
+		"fromStepId": "step_audit_risk_scoring_evaluate_suspicious_patterns",
+		"toStepId": "step_audit_risk_scoring_update_scoring_thresholds",
+		"runCount": 6,
+		"runIds": ["run_006", "run_014", "run_022", "run_030", "run_038", "run_046"],
+		"avgTokens": 192,
+		"avgLatencyMs": 2496,
+		"successRate": 1
+	},
+	{
+		"edgeId": "edge_tmpl_audit_risk_scoring_step_audit_risk_scoring_update_scoring_thresholds_step_audit_risk_scoring_flag_sudo_restart_path",
+		"templateId": "tmpl_audit_risk_scoring",
+		"fromStepId": "step_audit_risk_scoring_update_scoring_thresholds",
+		"toStepId": "step_audit_risk_scoring_flag_sudo_restart_path",
+		"runCount": 2,
+		"runIds": ["run_006", "run_046"],
+		"avgTokens": 232,
+		"avgLatencyMs": 1878,
+		"successRate": 1
+	},
+	{
+		"edgeId": "edge_tmpl_audit_risk_scoring_step_audit_risk_scoring_flag_sudo_restart_path_step_audit_risk_scoring_rerun_audit_validation",
+		"templateId": "tmpl_audit_risk_scoring",
+		"fromStepId": "step_audit_risk_scoring_flag_sudo_restart_path",
+		"toStepId": "step_audit_risk_scoring_rerun_audit_validation",
+		"runCount": 2,
+		"runIds": ["run_006", "run_046"],
+		"avgTokens": 394,
+		"avgLatencyMs": 2092,
+		"successRate": 1
+	},
+	{
+		"edgeId": "edge_tmpl_analyze_cost_breakdown_step_analyze_cost_breakdown_collect_session_usage_step_analyze_cost_breakdown_plan_aggregation_query",
+		"templateId": "tmpl_analyze_cost_breakdown",
+		"fromStepId": "step_analyze_cost_breakdown_collect_session_usage",
+		"toStepId": "step_analyze_cost_breakdown_plan_aggregation_query",
+		"runCount": 6,
+		"runIds": ["run_007", "run_015", "run_023", "run_031", "run_039", "run_047"],
+		"avgTokens": 1625,
+		"avgLatencyMs": 12926,
+		"successRate": 1
+	},
+	{
+		"edgeId": "edge_tmpl_analyze_cost_breakdown_step_analyze_cost_breakdown_plan_aggregation_query_step_analyze_cost_breakdown_implement_cost_views",
+		"templateId": "tmpl_analyze_cost_breakdown",
+		"fromStepId": "step_analyze_cost_breakdown_plan_aggregation_query",
+		"toStepId": "step_analyze_cost_breakdown_implement_cost_views",
+		"runCount": 6,
+		"runIds": ["run_007", "run_015", "run_023", "run_031", "run_039", "run_047"],
+		"avgTokens": 193,
+		"avgLatencyMs": 2511,
+		"successRate": 1
+	},
+	{
+		"edgeId": "edge_tmpl_analyze_cost_breakdown_step_analyze_cost_breakdown_implement_cost_views_step_analyze_cost_breakdown_run_usage_snapshot",
+		"templateId": "tmpl_analyze_cost_breakdown",
+		"fromStepId": "step_analyze_cost_breakdown_implement_cost_views",
+		"toStepId": "step_analyze_cost_breakdown_run_usage_snapshot",
+		"runCount": 3,
+		"runIds": ["run_007", "run_015", "run_047"],
+		"avgTokens": 506,
+		"avgLatencyMs": 3498,
+		"successRate": 1
+	},
+	{
+		"edgeId": "edge_tmpl_stream_weekly_instance_usage_step_stream_weekly_instance_usage_inspect_usage_query_step_stream_weekly_instance_usage_shape_instance_summary_payload",
+		"templateId": "tmpl_stream_weekly_instance_usage",
+		"fromStepId": "step_stream_weekly_instance_usage_inspect_usage_query",
+		"toStepId": "step_stream_weekly_instance_usage_shape_instance_summary_payload",
+		"runCount": 6,
+		"runIds": ["run_008", "run_016", "run_024", "run_032", "run_040", "run_048"],
+		"avgTokens": 1457,
+		"avgLatencyMs": 5868,
+		"successRate": 1
+	},
+	{
+		"edgeId": "edge_tmpl_stream_weekly_instance_usage_step_stream_weekly_instance_usage_shape_instance_summary_payload_step_stream_weekly_instance_usage_write_weekly_usage_endpoint",
+		"templateId": "tmpl_stream_weekly_instance_usage",
+		"fromStepId": "step_stream_weekly_instance_usage_shape_instance_summary_payload",
+		"toStepId": "step_stream_weekly_instance_usage_write_weekly_usage_endpoint",
+		"runCount": 6,
+		"runIds": ["run_008", "run_016", "run_024", "run_032", "run_040", "run_048"],
+		"avgTokens": 168,
+		"avgLatencyMs": 1400,
+		"successRate": 1
+	},
+	{
+		"edgeId": "edge_tmpl_stream_weekly_instance_usage_step_stream_weekly_instance_usage_write_weekly_usage_endpoint_step_stream_weekly_instance_usage_run_weekly_usage_smoke_test",
+		"templateId": "tmpl_stream_weekly_instance_usage",
+		"fromStepId": "step_stream_weekly_instance_usage_write_weekly_usage_endpoint",
+		"toStepId": "step_stream_weekly_instance_usage_run_weekly_usage_smoke_test",
+		"runCount": 5,
+		"runIds": ["run_008", "run_016", "run_024", "run_040", "run_048"],
+		"avgTokens": 577,
+		"avgLatencyMs": 2375,
+		"successRate": 1
+	},
+	{
+		"edgeId": "edge_tmpl_ship_fastapi_instance_endpoints_step_ship_fastapi_instance_endpoints_write_instance_endpoints_step_ship_fastapi_instance_endpoints_adjust_heartbeat_validation",
+		"templateId": "tmpl_ship_fastapi_instance_endpoints",
+		"fromStepId": "step_ship_fastapi_instance_endpoints_write_instance_endpoints",
+		"toStepId": "step_ship_fastapi_instance_endpoints_adjust_heartbeat_validation",
+		"runCount": 4,
+		"runIds": ["run_011", "run_019", "run_027", "run_043"],
+		"avgTokens": 267,
+		"avgLatencyMs": 2377,
+		"successRate": 1
+	},
+	{
+		"edgeId": "edge_tmpl_ship_fastapi_instance_endpoints_step_ship_fastapi_instance_endpoints_adjust_heartbeat_validation_step_ship_fastapi_instance_endpoints_rerun_pytest_instances",
+		"templateId": "tmpl_ship_fastapi_instance_endpoints",
+		"fromStepId": "step_ship_fastapi_instance_endpoints_adjust_heartbeat_validation",
+		"toStepId": "step_ship_fastapi_instance_endpoints_rerun_pytest_instances",
+		"runCount": 4,
+		"runIds": ["run_011", "run_019", "run_027", "run_043"],
+		"avgTokens": 562,
+		"avgLatencyMs": 1918,
+		"successRate": 1
+	},
+	{
+		"edgeId": "edge_tmpl_merge_task_runs_into_dag_step_merge_task_runs_into_dag_implement_step_merge_query_step_merge_task_runs_into_dag_run_dag_merge_tests",
+		"templateId": "tmpl_merge_task_runs_into_dag",
+		"fromStepId": "step_merge_task_runs_into_dag_implement_step_merge_query",
+		"toStepId": "step_merge_task_runs_into_dag_run_dag_merge_tests",
+		"runCount": 2,
+		"runIds": ["run_012", "run_036"],
+		"avgTokens": 212,
+		"avgLatencyMs": 1843,
+		"successRate": 0.5
+	},
+	{
+		"edgeId": "edge_tmpl_visualize_template_dag_step_visualize_template_dag_wire_cytoscape_canvas_step_visualize_template_dag_run_svelte_check_graph",
+		"templateId": "tmpl_visualize_template_dag",
+		"fromStepId": "step_visualize_template_dag_wire_cytoscape_canvas",
+		"toStepId": "step_visualize_template_dag_run_svelte_check_graph",
+		"runCount": 3,
+		"runIds": ["run_013", "run_021", "run_045"],
+		"avgTokens": 495,
+		"avgLatencyMs": 1137,
+		"successRate": 0.67
+	},
+	{
+		"edgeId": "edge_tmpl_audit_risk_scoring_step_audit_risk_scoring_update_scoring_thresholds_step_audit_risk_scoring_run_audit_validation",
+		"templateId": "tmpl_audit_risk_scoring",
+		"fromStepId": "step_audit_risk_scoring_update_scoring_thresholds",
+		"toStepId": "step_audit_risk_scoring_run_audit_validation",
+		"runCount": 4,
+		"runIds": ["run_014", "run_022", "run_030", "run_038"],
+		"avgTokens": 338,
+		"avgLatencyMs": 2444,
+		"successRate": 1
+	},
+	{
+		"edgeId": "edge_tmpl_capture_action_events_step_capture_action_events_wire_event_emitters_step_capture_action_events_patch_retry_semantics",
+		"templateId": "tmpl_capture_action_events",
+		"fromStepId": "step_capture_action_events_wire_event_emitters",
+		"toStepId": "step_capture_action_events_patch_retry_semantics",
+		"runCount": 2,
+		"runIds": ["run_018", "run_042"],
+		"avgTokens": 232,
+		"avgLatencyMs": 932,
+		"successRate": 1
+	},
+	{
+		"edgeId": "edge_tmpl_capture_action_events_step_capture_action_events_patch_retry_semantics_step_capture_action_events_rerun_cargo_test_observer",
+		"templateId": "tmpl_capture_action_events",
+		"fromStepId": "step_capture_action_events_patch_retry_semantics",
+		"toStepId": "step_capture_action_events_rerun_cargo_test_observer",
+		"runCount": 2,
+		"runIds": ["run_018", "run_042"],
+		"avgTokens": 229,
+		"avgLatencyMs": 1813,
+		"successRate": 1
+	},
+	{
+		"edgeId": "edge_tmpl_analyze_cost_breakdown_step_analyze_cost_breakdown_implement_cost_views_step_analyze_cost_breakdown_tighten_token_grouping",
+		"templateId": "tmpl_analyze_cost_breakdown",
+		"fromStepId": "step_analyze_cost_breakdown_implement_cost_views",
+		"toStepId": "step_analyze_cost_breakdown_tighten_token_grouping",
+		"runCount": 3,
+		"runIds": ["run_023", "run_031", "run_039"],
+		"avgTokens": 186,
+		"avgLatencyMs": 3072,
+		"successRate": 1
+	},
+	{
+		"edgeId": "edge_tmpl_analyze_cost_breakdown_step_analyze_cost_breakdown_tighten_token_grouping_step_analyze_cost_breakdown_rerun_usage_snapshot",
+		"templateId": "tmpl_analyze_cost_breakdown",
+		"fromStepId": "step_analyze_cost_breakdown_tighten_token_grouping",
+		"toStepId": "step_analyze_cost_breakdown_rerun_usage_snapshot",
+		"runCount": 3,
+		"runIds": ["run_023", "run_031", "run_039"],
+		"avgTokens": 513,
+		"avgLatencyMs": 2004,
+		"successRate": 1
+	},
+	{
+		"edgeId": "edge_tmpl_create_observer_crate_step_create_observer_crate_write_observer_library_step_create_observer_crate_fix_type_mismatch",
+		"templateId": "tmpl_create_observer_crate",
+		"fromStepId": "step_create_observer_crate_write_observer_library",
+		"toStepId": "step_create_observer_crate_fix_type_mismatch",
+		"runCount": 3,
+		"runIds": ["run_025", "run_041", "run_049"],
+		"avgTokens": 164,
+		"avgLatencyMs": 1807,
+		"successRate": 1
+	},
+	{
+		"edgeId": "edge_tmpl_create_observer_crate_step_create_observer_crate_fix_type_mismatch_step_create_observer_crate_build_final_crate",
+		"templateId": "tmpl_create_observer_crate",
+		"fromStepId": "step_create_observer_crate_fix_type_mismatch",
+		"toStepId": "step_create_observer_crate_build_final_crate",
+		"runCount": 3,
+		"runIds": ["run_025", "run_041", "run_049"],
+		"avgTokens": 467,
+		"avgLatencyMs": 1134,
+		"successRate": 1
+	},
+	{
+		"edgeId": "edge_tmpl_stream_weekly_instance_usage_step_stream_weekly_instance_usage_write_weekly_usage_endpoint_step_stream_weekly_instance_usage_backfill_missing_idle_states",
+		"templateId": "tmpl_stream_weekly_instance_usage",
+		"fromStepId": "step_stream_weekly_instance_usage_write_weekly_usage_endpoint",
+		"toStepId": "step_stream_weekly_instance_usage_backfill_missing_idle_states",
+		"runCount": 1,
+		"runIds": ["run_032"],
+		"avgTokens": 129,
+		"avgLatencyMs": 2302,
+		"successRate": 1
+	},
+	{
+		"edgeId": "edge_tmpl_stream_weekly_instance_usage_step_stream_weekly_instance_usage_backfill_missing_idle_states_step_stream_weekly_instance_usage_rerun_weekly_usage_smoke_test",
+		"templateId": "tmpl_stream_weekly_instance_usage",
+		"fromStepId": "step_stream_weekly_instance_usage_backfill_missing_idle_states",
+		"toStepId": "step_stream_weekly_instance_usage_rerun_weekly_usage_smoke_test",
+		"runCount": 1,
+		"runIds": ["run_032"],
+		"avgTokens": 473,
+		"avgLatencyMs": 1227,
+		"successRate": 1
+	}
 ]

@@ -88,6 +88,7 @@
 5. Every 30 seconds, zeroclaw sends a heartbeat: `PATCH /instances/{id}/heartbeat`
 
 This approach:
+
 - ✅ **Modular** — touches zero business logic, just reads context and ships events
 - ✅ **Non-blocking** — fire-and-forget async, <1ms latency impact on agent
 - ✅ **Resilient** — if backend is down, zeroclaw continues running normally
@@ -137,11 +138,13 @@ This approach:
 ```
 
 **Lifecycle:**
+
 - `POST /instances` on zeroclaw boot → creates/updates Instance node
 - `PATCH /instances/{id}/heartbeat` every 30s → updates `last_seen_at`
 - Dashboard marks offline if `last_seen_at > 90s ago`
 
 **Query Example:**
+
 ```cypher
 MATCH (u:User)-[:OWNS]->(i:Instance)
 RETURN i.name, i.status, i.last_seen_at, i.zeroclaw_version
@@ -176,6 +179,7 @@ ORDER BY i.is_pinned DESC, i.last_seen_at DESC
 ```
 
 **Properties:**
+
 - **Denormalized `instance_id`** — Fast filtering without join (e.g., "show me all sessions from prod-1")
 - **Git context** — Reproducibility: which code version was this agent running against?
 - **Cost tracking** — Sum of all PERFORMED edge `cost_usd` for this session
@@ -241,6 +245,7 @@ ORDER BY i.is_pinned DESC, i.last_seen_at DESC
 ```
 
 **Risk Scoring Logic:**
+
 ```
 risk_score = 0.0
 if permission_level == "dangerous":
@@ -297,6 +302,7 @@ Clamp to [0.0, 1.0]
 ```
 
 **Lifecycle:**
+
 - Created on first run when zeroclaw takes a step (tool_name + step_name fingerprint)
 - Updated on each subsequent run that takes the same step
 - Metrics (`run_count`, `avg_tokens`, etc.) are rolling aggregates
@@ -365,6 +371,7 @@ This edge holds the **context** of why and how an action was executed:
 ```
 
 **Key properties:**
+
 - **Sequence** — Reconstruct execution order within a task
 - **Reasoning** — AI's explanation for why it chose this step
 - **Tokens breakdown** — See thinking vs output token spend per step
@@ -435,6 +442,7 @@ Links a concrete action to its abstract DAG node. Enables drill-down from DAG vi
 ### Problem
 
 You're spinning up 5 zeroclaw servers (dev machine, 2 VPS, test machine, staging). You need to:
+
 - Know which instance is online/offline
 - See metrics per instance (tokens, tasks, costs)
 - Cross-instance cost analysis
@@ -515,6 +523,7 @@ Run 4:  [read_manifest] → [plan] → [write_lib] → [fix_types] → [build]  
 ```
 
 You want to:
+
 1. **Group these runs** under one concept ("Create observer crate")
 2. **Visualize the merged DAG** showing all possible paths
 3. **Compare metrics** across paths (tokens, duration, success rate)
@@ -570,6 +579,7 @@ You want to:
 ### Interaction Model
 
 **Hover on edge:**
+
 ```
 read_manifest → plan
 ━━━━━━━━━━━━━━━━━━━━━━━━
@@ -581,6 +591,7 @@ Runs: [run_001, run_002, run_003, run_004]
 ```
 
 **Click on node:**
+
 ```
 Step: write_lib
 ━━━━━━━━━━━━━━━━━━━━━━━━
@@ -598,6 +609,7 @@ Exit Points: [build (4x), fix_types (1x)]
 ```
 
 **Click on specific run path:**
+
 ```
 Comparing Run 2 vs Run 4
 ━━━━━━━━━━━━━━━━━━━━━━━━
@@ -749,7 +761,7 @@ When a new action is recorded, the backend automatically:
 ```python
 async def merge_run_into_dag(task_run: TaskRun, actions: list[Action]):
     """Merge a new task run into the DAG."""
-    
+
     # 1. Find or create TaskTemplate
     template_id = slugify(task_run.title)
     await neo4j.run("""
@@ -757,13 +769,13 @@ async def merge_run_into_dag(task_run: TaskRun, actions: list[Action]):
         ON CREATE SET tmpl.title = $title, tmpl.fingerprint = $fp
         ON MATCH  SET tmpl.run_count = tmpl.run_count + 1
     """, tmpl_id=template_id, title=task_run.title, fp=template_id)
-    
+
     # 2. For each consecutive pair of actions, create/update StepNodes and STEP_SEQUENCE edge
     for i in range(len(actions) - 1):
         a1, a2 = actions[i], actions[i+1]
         fp1 = f"{a1.tool_name}:{slugify(a1.step_name)}"
         fp2 = f"{a2.tool_name}:{slugify(a2.step_name)}"
-        
+
         await neo4j.run("""
             MERGE (s1:StepNode {fingerprint: $fp1, template_id: $tmpl_id})
             ON CREATE SET s1 += {
@@ -771,14 +783,14 @@ async def merge_run_into_dag(task_run: TaskRun, actions: list[Action]):
                 run_count: 1, success_rate: 1.0
             }
             ON MATCH SET s1.run_count = s1.run_count + 1
-            
+
             MERGE (s2:StepNode {fingerprint: $fp2, template_id: $tmpl_id})
             ON CREATE SET s2 += {
                 step_id: $step2_id, tool_name: $tool2, step_name: $name2,
                 run_count: 1, success_rate: 1.0
             }
             ON MATCH SET s2.run_count = s2.run_count + 1
-            
+
             MERGE (s1)-[seq:STEP_SEQUENCE]->(s2)
             ON CREATE SET seq.run_count = 1, seq.run_ids = [$run_id]
             ON MATCH SET
@@ -791,6 +803,7 @@ async def merge_run_into_dag(task_run: TaskRun, actions: list[Action]):
 ```
 
 **Key patterns:**
+
 - `MERGE` ensures no duplicates (idempotent)
 - `ON CREATE SET` initializes new nodes
 - `ON MATCH SET` increments counters, appends run_ids
@@ -861,6 +874,7 @@ Interactive, animated DAG showing all paths through a task template.
 ```
 
 **Interactivity:**
+
 - Hover node → show metrics tooltip
 - Click node → side panel with all runs that hit this step
 - Hover edge → tooltip with edge metrics
@@ -919,6 +933,7 @@ Interactive, animated DAG showing all paths through a task template.
 ```
 
 **Features:**
+
 - Mark/flag actions inline
 - Drill to full action details
 - Highlight dangerous actions
@@ -976,8 +991,8 @@ services:
       NEO4J_AUTH: neo4j/observegraph
       NEO4J_PLUGINS: '["apoc"]'
     ports:
-      - "7474:7474"    # HTTP
-      - "7687:7687"    # Bolt
+      - '7474:7474' # HTTP
+      - '7687:7687' # Bolt
     volumes:
       - neo4j_data:/data
       - ./init.cypher:/var/lib/neo4j/import/init.cypher
@@ -992,7 +1007,7 @@ services:
       NEO4J_PASSWORD: observegraph
       ENVIRONMENT: development
     ports:
-      - "8000:8000"
+      - '8000:8000'
     depends_on:
       - neo4j
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
@@ -1004,7 +1019,7 @@ services:
     environment:
       REACT_APP_API_URL: http://localhost:8000
     ports:
-      - "3000:3000"
+      - '3000:3000'
     depends_on:
       - api
 
@@ -1096,19 +1111,25 @@ docker-compose up -d
 ## Key Implementation Principles
 
 ### 1. **Non-blocking Emission**
+
 Every event is sent in a spawned tokio task. If the backend is down, zeroclaw continues normally. No impact on agent latency.
 
 ### 2. **Denormalization for Query Speed**
+
 `instance_id`, `session_id`, `task_id` are denormalized into Action nodes. This trades ~10% more storage for O(1) filtering on high-volume queries.
 
 ### 3. **DAG Deduplication**
+
 Task runs are merged into DAGs using `fingerprint` matching (slugified title + tool_name + step_name). A single Neo4j query returns all paths + metrics.
 
 ### 4. **Immutable Audit Trail**
+
 Task and Action nodes are never updated after creation, only extended (new edges created). This preserves audit integrity — the exact sequence of what happened is forever recorded.
 
 ### 5. **Metrics Aggregation**
+
 TaskTemplate and StepNode metrics are rolling averages:
+
 ```
 new_avg = (old_avg * old_count + new_value) / (old_count + 1)
 ```

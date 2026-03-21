@@ -2,7 +2,9 @@ import { createHash } from 'node:crypto';
 
 const TOTAL_TASK_RUNS = 50;
 const INSTANCE_COUNT = 7;
-const SESSION_TASK_COUNTS = [3, 3, 2, 4, 3, 2, 4, 3, 2, 4, 3, 2, 3, 3, 2, 3, 2, 2];
+const SESSION_TASK_COUNTS = [7, 6, 5, 5, 4, 4, 4, 4, 3, 3, 3, 2];
+const SHARED_ENTRY_STEP_NAME = 'load root task context';
+const SHARED_ENTRY_FILE_PATH = '/workspace/observegraph/AGENTS.md';
 
 function mulberry32(seed) {
 	let value = seed >>> 0;
@@ -130,7 +132,7 @@ const instanceBlueprints = [
 ];
 
 const templateBlueprints = [
-	{
+	rootHeavyBlueprint({
 		slug: 'create_observer_crate',
 		title: 'Create observer crate in zeroclaw',
 		description: 'Add crates/observer with fire-and-forget HTTP emitter.',
@@ -138,21 +140,25 @@ const templateBlueprints = [
 		priority: 'high',
 		technologies: ['rust', 'tokio', 'neo4j'],
 		tags: ['observer', 'instrumentation'],
-		baseSteps: [
-			step('read project manifest', 'read_file', 'file_read', { filePath: '/workspace/Cargo.toml' }),
-			step('plan implementation', 'llm_plan', 'llm_call'),
-			step('write observer library', 'write_file', 'file_write', { filePath: '/workspace/crates/observer/src/lib.rs' }),
-			step('build observer crate', 'bash', 'shell', { command: 'cargo build -p observer' })
-		],
-		branchSteps: [
-			step('fix type mismatch', 'write_file', 'file_write', {
-				filePath: '/workspace/crates/observer/src/lib.rs',
-				isRecovery: true
-			}),
-			step('build final crate', 'bash', 'shell', { command: 'cargo build -p observer', isRecovery: true })
-		]
-	},
-	{
+		contextPath: '/workspace/Cargo.toml',
+		baseAction: {
+			stepName: 'write observer library',
+			toolName: 'write_file',
+			type: 'file_write',
+			filePath: '/workspace/crates/observer/src/lib.rs'
+		},
+		recoveryAction: {
+			stepName: 'stabilize observer library',
+			toolName: 'write_file',
+			type: 'file_write',
+			filePath: '/workspace/crates/observer/src/lib.rs'
+		},
+		verifyAction: {
+			stepName: 'build observer crate',
+			command: 'cargo build -p observer'
+		}
+	}),
+	rootHeavyBlueprint({
 		slug: 'capture_action_events',
 		title: 'Capture action events across tool paths',
 		description: 'Instrument bash, file writes and LLM calls with ActionEvent payloads.',
@@ -160,21 +166,25 @@ const templateBlueprints = [
 		priority: 'high',
 		technologies: ['rust', 'serde', 'http'],
 		tags: ['telemetry', 'events'],
-		baseSteps: [
-			step('inspect tool executor', 'read_file', 'file_read', { filePath: '/workspace/crates/agent/src/tool_executor.rs' }),
-			step('design payload envelope', 'llm_plan', 'llm_call'),
-			step('wire event emitters', 'write_file', 'file_write', { filePath: '/workspace/crates/observer/src/emitter.rs' }),
-			step('run cargo test observer', 'bash', 'shell', { command: 'cargo test -p observer' })
-		],
-		branchSteps: [
-			step('patch retry semantics', 'write_file', 'file_write', {
-				filePath: '/workspace/crates/observer/src/emitter.rs',
-				isRecovery: true
-			}),
-			step('rerun cargo test observer', 'bash', 'shell', { command: 'cargo test -p observer', isRecovery: true })
-		]
-	},
-	{
+		contextPath: '/workspace/crates/agent/src/tool_executor.rs',
+		baseAction: {
+			stepName: 'wire event emitters',
+			toolName: 'write_file',
+			type: 'file_write',
+			filePath: '/workspace/crates/observer/src/emitter.rs'
+		},
+		recoveryAction: {
+			stepName: 'patch retry semantics',
+			toolName: 'write_file',
+			type: 'file_write',
+			filePath: '/workspace/crates/observer/src/emitter.rs'
+		},
+		verifyAction: {
+			stepName: 'run cargo test observer',
+			command: 'cargo test -p observer'
+		}
+	}),
+	rootHeavyBlueprint({
 		slug: 'ship_fastapi_instance_endpoints',
 		title: 'Ship FastAPI instance registration endpoints',
 		description: 'Implement POST /instances and PATCH /instances/{id}/heartbeat.',
@@ -182,21 +192,25 @@ const templateBlueprints = [
 		priority: 'high',
 		technologies: ['python', 'fastapi', 'pydantic'],
 		tags: ['backend', 'instances'],
-		baseSteps: [
-			step('read api router', 'read_file', 'file_read', { filePath: '/workspace/backend/app/api/router.py' }),
-			step('draft pydantic contracts', 'llm_plan', 'llm_call'),
-			step('write instance endpoints', 'write_file', 'file_write', { filePath: '/workspace/backend/app/api/instances.py' }),
-			step('run pytest instances', 'bash', 'shell', { command: 'pytest backend/tests/test_instances.py' })
-		],
-		branchSteps: [
-			step('adjust heartbeat validation', 'write_file', 'file_write', {
-				filePath: '/workspace/backend/app/api/instances.py',
-				isRecovery: true
-			}),
-			step('rerun pytest instances', 'bash', 'shell', { command: 'pytest backend/tests/test_instances.py', isRecovery: true })
-		]
-	},
-	{
+		contextPath: '/workspace/backend/app/api/router.py',
+		baseAction: {
+			stepName: 'write instance endpoints',
+			toolName: 'write_file',
+			type: 'file_write',
+			filePath: '/workspace/backend/app/api/instances.py'
+		},
+		recoveryAction: {
+			stepName: 'adjust heartbeat validation',
+			toolName: 'write_file',
+			type: 'file_write',
+			filePath: '/workspace/backend/app/api/instances.py'
+		},
+		verifyAction: {
+			stepName: 'run pytest instances',
+			command: 'pytest backend/tests/test_instances.py'
+		}
+	}),
+	rootHeavyBlueprint({
 		slug: 'merge_task_runs_into_dag',
 		title: 'Merge task runs into the DAG',
 		description: 'Deduplicate steps into StepNodes and update STEP_SEQUENCE edges.',
@@ -204,21 +218,25 @@ const templateBlueprints = [
 		priority: 'high',
 		technologies: ['python', 'neo4j', 'cypher'],
 		tags: ['dag', 'graph'],
-		baseSteps: [
-			step('inspect cypher merge patterns', 'read_file', 'file_read', { filePath: '/workspace/backend/app/graph/merge.py' }),
-			step('reason about merge logic', 'llm_plan', 'llm_call'),
-			step('implement step merge query', 'write_file', 'file_write', { filePath: '/workspace/backend/app/graph/merge.py' }),
-			step('run dag merge tests', 'bash', 'shell', { command: 'pytest backend/tests/test_dag_merge.py' })
-		],
-		branchSteps: [
-			step('repair edge aggregation', 'write_file', 'file_write', {
-				filePath: '/workspace/backend/app/graph/merge.py',
-				isRecovery: true
-			}),
-			step('rerun dag merge tests', 'bash', 'shell', { command: 'pytest backend/tests/test_dag_merge.py', isRecovery: true })
-		]
-	},
-	{
+		contextPath: '/workspace/backend/app/graph/merge.py',
+		baseAction: {
+			stepName: 'implement step merge query',
+			toolName: 'write_file',
+			type: 'file_write',
+			filePath: '/workspace/backend/app/graph/merge.py'
+		},
+		recoveryAction: {
+			stepName: 'repair edge aggregation',
+			toolName: 'write_file',
+			type: 'file_write',
+			filePath: '/workspace/backend/app/graph/merge.py'
+		},
+		verifyAction: {
+			stepName: 'run dag merge tests',
+			command: 'pytest backend/tests/test_dag_merge.py'
+		}
+	}),
+	rootHeavyBlueprint({
 		slug: 'visualize_template_dag',
 		title: 'Visualize a task template DAG',
 		description: 'Render weighted step paths and drilldowns for a template.',
@@ -226,21 +244,25 @@ const templateBlueprints = [
 		priority: 'medium',
 		technologies: ['svelte', 'cytoscape', 'typescript'],
 		tags: ['frontend', 'dag'],
-		baseSteps: [
-			step('read graph panel component', 'read_file', 'file_read', { filePath: '/workspace/frontend/src/lib/components/GraphPanel.svelte' }),
-			step('plan dag interaction model', 'llm_plan', 'llm_call'),
-			step('wire cytoscape canvas', 'write_file', 'file_write', { filePath: '/workspace/frontend/src/lib/components/TaskGraph.svelte' }),
-			step('run svelte check graph', 'bash', 'shell', { command: 'pnpm check' })
-		],
-		branchSteps: [
-			step('tune graph layout spacing', 'write_file', 'file_write', {
-				filePath: '/workspace/frontend/src/lib/components/TaskGraph.svelte',
-				isRecovery: true
-			}),
-			step('rerun svelte check graph', 'bash', 'shell', { command: 'pnpm check', isRecovery: true })
-		]
-	},
-	{
+		contextPath: '/workspace/frontend/src/lib/components/TaskGraph.svelte',
+		baseAction: {
+			stepName: 'wire cytoscape canvas',
+			toolName: 'write_file',
+			type: 'file_write',
+			filePath: '/workspace/frontend/src/lib/components/TaskGraph.svelte'
+		},
+		recoveryAction: {
+			stepName: 'tune graph layout spacing',
+			toolName: 'write_file',
+			type: 'file_write',
+			filePath: '/workspace/frontend/src/lib/components/TaskGraph.svelte'
+		},
+		verifyAction: {
+			stepName: 'run svelte check graph',
+			command: 'pnpm check'
+		}
+	}),
+	rootHeavyBlueprint({
 		slug: 'audit_risk_scoring',
 		title: 'Audit dangerous commands and risk scoring',
 		description: 'Score actions by permission level and flag dangerous shell commands.',
@@ -248,21 +270,25 @@ const templateBlueprints = [
 		priority: 'medium',
 		technologies: ['python', 'rules', 'analytics'],
 		tags: ['risk', 'audit'],
-		baseSteps: [
-			step('inspect risk rules', 'read_file', 'file_read', { filePath: '/workspace/backend/app/risk/rules.py' }),
-			step('evaluate suspicious patterns', 'llm_plan', 'llm_call'),
-			step('update scoring thresholds', 'write_file', 'file_write', { filePath: '/workspace/backend/app/risk/rules.py' }),
-			step('run audit validation', 'bash', 'shell', { command: 'pytest backend/tests/test_risk_scoring.py' })
-		],
-		branchSteps: [
-			step('flag sudo restart path', 'write_file', 'file_write', {
-				filePath: '/workspace/backend/app/risk/rules.py',
-				isRecovery: true
-			}),
-			step('rerun audit validation', 'bash', 'shell', { command: 'pytest backend/tests/test_risk_scoring.py', isRecovery: true })
-		]
-	},
-	{
+		contextPath: '/workspace/backend/app/risk/rules.py',
+		baseAction: {
+			stepName: 'update scoring thresholds',
+			toolName: 'write_file',
+			type: 'file_write',
+			filePath: '/workspace/backend/app/risk/rules.py'
+		},
+		recoveryAction: {
+			stepName: 'flag sudo restart path',
+			toolName: 'write_file',
+			type: 'file_write',
+			filePath: '/workspace/backend/app/risk/rules.py'
+		},
+		verifyAction: {
+			stepName: 'run audit validation',
+			command: 'pytest backend/tests/test_risk_scoring.py'
+		}
+	}),
+	rootHeavyBlueprint({
 		slug: 'analyze_cost_breakdown',
 		title: 'Analyze cost breakdown by tool and task',
 		description: 'Aggregate token burn and spend across sessions.',
@@ -270,21 +296,24 @@ const templateBlueprints = [
 		priority: 'medium',
 		technologies: ['python', 'sql', 'analytics'],
 		tags: ['cost', 'tokens'],
-		baseSteps: [
-			step('collect session usage', 'read_file', 'file_read', { filePath: '/workspace/backend/app/analytics/costs.py' }),
-			step('plan aggregation query', 'llm_plan', 'llm_call'),
-			step('implement cost views', 'write_file', 'file_write', { filePath: '/workspace/backend/app/analytics/costs.py' }),
-			step('run usage snapshot', 'bash', 'shell', { command: 'python -m backend.analytics.snapshot' })
-		],
-		branchSteps: [
-			step('tighten token grouping', 'write_file', 'file_write', {
-				filePath: '/workspace/backend/app/analytics/costs.py',
-				isRecovery: true
-			}),
-			step('rerun usage snapshot', 'bash', 'shell', { command: 'python -m backend.analytics.snapshot', isRecovery: true })
-		]
-	},
-	{
+		contextPath: '/workspace/backend/app/analytics/costs.py',
+		baseAction: {
+			stepName: 'plan aggregation query',
+			toolName: 'llm_plan',
+			type: 'llm_call'
+		},
+		recoveryAction: {
+			stepName: 'implement cost views',
+			toolName: 'write_file',
+			type: 'file_write',
+			filePath: '/workspace/backend/app/analytics/costs.py'
+		},
+		verifyAction: {
+			stepName: 'run usage snapshot',
+			command: 'python -m backend.analytics.snapshot'
+		}
+	}),
+	rootHeavyBlueprint({
 		slug: 'stream_weekly_instance_usage',
 		title: 'Stream weekly instance usage to the dashboard',
 		description: 'Compute 7-day summaries for each tracked agent instance.',
@@ -292,20 +321,24 @@ const templateBlueprints = [
 		priority: 'medium',
 		technologies: ['python', 'neo4j', 'react'],
 		tags: ['instances', 'usage'],
-		baseSteps: [
-			step('inspect usage query', 'read_file', 'file_read', { filePath: '/workspace/backend/app/analytics/weekly_usage.py' }),
-			step('shape instance summary payload', 'llm_plan', 'llm_call'),
-			step('write weekly usage endpoint', 'write_file', 'file_write', { filePath: '/workspace/backend/app/api/usage.py' }),
-			step('run weekly usage smoke test', 'bash', 'shell', { command: 'pytest backend/tests/test_usage.py' })
-		],
-		branchSteps: [
-			step('backfill missing idle states', 'write_file', 'file_write', {
-				filePath: '/workspace/backend/app/api/usage.py',
-				isRecovery: true
-			}),
-			step('rerun weekly usage smoke test', 'bash', 'shell', { command: 'pytest backend/tests/test_usage.py', isRecovery: true })
-		]
-	}
+		contextPath: '/workspace/backend/app/analytics/weekly_usage.py',
+		baseAction: {
+			stepName: 'write weekly usage endpoint',
+			toolName: 'write_file',
+			type: 'file_write',
+			filePath: '/workspace/backend/app/api/usage.py'
+		},
+		recoveryAction: {
+			stepName: 'backfill missing idle states',
+			toolName: 'write_file',
+			type: 'file_write',
+			filePath: '/workspace/backend/app/api/usage.py'
+		},
+		verifyAction: {
+			stepName: 'run weekly usage smoke test',
+			command: 'pytest backend/tests/test_usage.py'
+		}
+	})
 ];
 
 function step(stepName, toolName, type, overrides = {}) {
@@ -317,6 +350,52 @@ function step(stepName, toolName, type, overrides = {}) {
 		filePath: overrides.filePath ?? null,
 		isRecovery: overrides.isRecovery ?? false
 	};
+}
+
+function rootContextStep(contextPath) {
+	return step(SHARED_ENTRY_STEP_NAME, 'read_file', 'file_read', {
+		filePath: contextPath ?? SHARED_ENTRY_FILE_PATH
+	});
+}
+
+function rootHeavyBlueprint({
+	slug,
+	title,
+	description,
+	type,
+	priority,
+	technologies,
+	tags,
+	contextPath,
+	baseAction,
+	recoveryAction,
+	verifyAction
+}) {
+	return {
+		slug,
+		title,
+		description,
+		type,
+		priority,
+		technologies,
+		tags,
+		baseSteps: [rootContextStep(contextPath), stepFromAction(baseAction)],
+		branchSteps: [
+			stepFromAction({ ...recoveryAction, isRecovery: true }),
+			step(verifyAction.stepName, 'bash', 'shell', {
+				command: verifyAction.command,
+				isRecovery: true
+			})
+		]
+	};
+}
+
+function stepFromAction(action) {
+	return step(action.stepName, action.toolName, action.type, {
+		command: action.command,
+		filePath: action.filePath,
+		isRecovery: action.isRecovery
+	});
 }
 
 export function generateObserveGraphMockData(seed = 20260321) {
@@ -354,7 +433,9 @@ export function generateObserveGraphMockData(seed = 20260321) {
 
 	SESSION_TASK_COUNTS.forEach((taskCount, sessionIndex) => {
 		const instance = instances[sessionIndex % instances.length];
-		const sessionStart = new Date(now.getTime() - (sessionIndex * 8 + between(rng, 1, 4)) * 60 * 60 * 1000);
+		const sessionStart = new Date(
+			now.getTime() - (sessionIndex * 8 + between(rng, 1, 4)) * 60 * 60 * 1000
+		);
 		const sessionId = `sess_20260321_${String(sessionIndex + 1).padStart(3, '0')}`;
 		const sessionTasks = [];
 		let cursor = sessionStart.getTime();
@@ -421,7 +502,9 @@ export function generateObserveGraphMockData(seed = 20260321) {
 		},
 		instances: instancesWithMetrics,
 		sessions,
-		tasks: tasks.map(({ actions: _actions, ...task }) => task),
+		tasks: tasks.map((task) =>
+			Object.fromEntries(Object.entries(task).filter(([key]) => key !== 'actions'))
+		),
 		actions,
 		taskTemplates,
 		stepNodes,
@@ -433,8 +516,8 @@ function buildTaskRun({ rng, taskOrdinal, instance, sessionId, blueprint, startM
 	const runId = `run_${String(taskOrdinal).padStart(3, '0')}`;
 	const taskId = `task_${String(taskOrdinal).padStart(3, '0')}`;
 	const startedAt = new Date(startMs);
-	const shouldRecover = rng() > 0.63;
-	const shouldFail = !shouldRecover && rng() > 0.84;
+	const shouldRecover = rng() > 0.82;
+	const shouldFail = !shouldRecover && rng() > 0.92;
 	const stepSequence = shouldRecover
 		? [...blueprint.baseSteps.slice(0, -1), ...blueprint.branchSteps]
 		: [...blueprint.baseSteps];
@@ -446,20 +529,19 @@ function buildTaskRun({ rng, taskOrdinal, instance, sessionId, blueprint, startM
 		const ended = new Date(cursor + durationMs);
 		cursor = ended.getTime() + between(rng, 10, 45) * 1000;
 		const permissionLevel = inferPermission(definition.type);
-		const totalTokens =
+		const totalTokens = sampleActionTokens(rng, definition, index);
+		const thinkingTokens =
 			definition.type === 'llm_call'
-				? between(rng, 800, 2300)
-				: definition.type === 'shell'
-					? between(rng, 180, 780)
-					: between(rng, 60, 360);
-		const thinkingTokens = definition.type === 'llm_call' ? Math.round(totalTokens * 0.34) : Math.round(totalTokens * 0.14);
+				? Math.round(totalTokens * 0.34)
+				: Math.round(totalTokens * 0.14);
 		const outputTokens = totalTokens - thinkingTokens;
 		const isLast = index === stepSequence.length - 1;
 		const status = shouldFail && isLast ? 'failed' : 'success';
 		const exitCode = definition.type === 'shell' ? (status === 'failed' ? 1 : 0) : null;
-		const riskScore = definition.type === 'shell' && definition.command?.includes('sudo')
-			? 0.88
-			: round(baseRisk(permissionLevel) + rng() * 0.12, 2);
+		const riskScore =
+			definition.type === 'shell' && definition.command?.includes('sudo')
+				? 0.88
+				: round(baseRisk(permissionLevel) + rng() * 0.12, 2);
 		return {
 			actionId: `${taskId}_act_${String(index + 1).padStart(2, '0')}`,
 			taskId,
@@ -486,7 +568,10 @@ function buildTaskRun({ rng, taskOrdinal, instance, sessionId, blueprint, startM
 			thinkingTokens,
 			outputTokens,
 			totalTokens,
-			modelUsed: definition.type === 'llm_call' ? pick(rng, ['claude-3-7-sonnet', 'gpt-5-mini']) : instance.modelDefault,
+			modelUsed:
+				definition.type === 'llm_call'
+					? pick(rng, ['claude-3-7-sonnet', 'gpt-5-mini'])
+					: instance.modelDefault,
 			latencyMs: durationMs,
 			costUsd: round(totalTokens * 0.000021, 4),
 			retryCount: definition.isRecovery ? 1 : 0,
@@ -540,7 +625,8 @@ function deriveTemplates(tasks) {
 	return [...grouped.entries()].map(([templateId, runs]) => {
 		const sample = runs[0];
 		const successful = runs.filter((run) => run.status === 'completed');
-		const bestRun = [...successful].sort((left, right) => left.totalCostUsd - right.totalCostUsd)[0] ?? sample;
+		const bestRun =
+			[...successful].sort((left, right) => left.totalCostUsd - right.totalCostUsd)[0] ?? sample;
 		return {
 			templateId,
 			title: sample.title,
@@ -556,6 +642,19 @@ function deriveTemplates(tasks) {
 			tags: sample.tags
 		};
 	});
+}
+
+function sampleActionTokens(rng, definition, index) {
+	if (index === 0 && definition.stepName === SHARED_ENTRY_STEP_NAME) {
+		return between(rng, 320, 760);
+	}
+	if (definition.type === 'llm_call') {
+		return between(rng, 900, 2100);
+	}
+	if (definition.type === 'shell') {
+		return between(rng, 160, 520);
+	}
+	return between(rng, 80, 300);
 }
 
 function deriveGraphArtifacts(tasks) {
@@ -657,17 +756,29 @@ function deriveInstanceMetrics({ instances, sessions, tasks, actions, now }) {
 	const metrics = new Map();
 
 	for (const instance of instances) {
-		const instanceSessions = sessions.filter((session) => session.instanceId === instance.instanceId);
+		const instanceSessions = sessions.filter(
+			(session) => session.instanceId === instance.instanceId
+		);
 		const instanceTasks = tasks.filter((task) => task.instanceId === instance.instanceId);
 		const instanceActions = actions.filter((action) => action.instanceId === instance.instanceId);
 		metrics.set(instance.instanceId, {
-			sessionCount7d: instanceSessions.filter((session) => new Date(session.startedAt).getTime() >= sevenDaysAgo).length,
-			taskCount7d: instanceTasks.filter((task) => new Date(task.startedAt).getTime() >= sevenDaysAgo).length,
-			actionCount7d: instanceActions.filter((action) => new Date(action.startedAt).getTime() >= sevenDaysAgo).length,
-			completedToday: instanceTasks.filter(
-				(task) => task.status === 'completed' && new Date(task.startedAt).getTime() >= todayStart.getTime()
+			sessionCount7d: instanceSessions.filter(
+				(session) => new Date(session.startedAt).getTime() >= sevenDaysAgo
 			).length,
-			runningTasks: instance.status === 'online' ? between(mulberry32(hashSnapshot(instance.instanceId).length), 0, 4) : 0,
+			taskCount7d: instanceTasks.filter(
+				(task) => new Date(task.startedAt).getTime() >= sevenDaysAgo
+			).length,
+			actionCount7d: instanceActions.filter(
+				(action) => new Date(action.startedAt).getTime() >= sevenDaysAgo
+			).length,
+			completedToday: instanceTasks.filter(
+				(task) =>
+					task.status === 'completed' && new Date(task.startedAt).getTime() >= todayStart.getTime()
+			).length,
+			runningTasks:
+				instance.status === 'online'
+					? between(mulberry32(hashSnapshot(instance.instanceId).length), 0, 4)
+					: 0,
 			totalTokens7d: sum(instanceTasks.map((task) => task.totalTokens)),
 			totalCostUsd7d: round(sum(instanceTasks.map((task) => task.totalCostUsd)), 4)
 		});
@@ -748,4 +859,3 @@ export function summarizeMockData(data) {
 		hash: hashSnapshot(data)
 	};
 }
-

@@ -125,7 +125,10 @@ export const insertStepEdges = internalMutation({
 
 export const importMockData = action({
 	args: seedPayloadValidator,
-	handler: async (ctx, args): Promise<{
+	handler: async (
+		ctx,
+		args
+	): Promise<{
 		status: 'imported';
 		seed: number;
 		counts: {
@@ -144,7 +147,9 @@ export const importMockData = action({
 		await ctx.runMutation(internal.observegraphSeed.insertSessions, { items: args.sessions });
 		await ctx.runMutation(internal.observegraphSeed.insertTasks, { items: args.tasks });
 		await ctx.runMutation(internal.observegraphSeed.insertActions, { items: args.actions });
-		await ctx.runMutation(internal.observegraphSeed.insertTaskTemplates, { items: args.taskTemplates });
+		await ctx.runMutation(internal.observegraphSeed.insertTaskTemplates, {
+			items: args.taskTemplates
+		});
 		await ctx.runMutation(internal.observegraphSeed.insertStepNodes, { items: args.stepNodes });
 		await ctx.runMutation(internal.observegraphSeed.insertStepEdges, { items: args.stepEdges });
 		return {
