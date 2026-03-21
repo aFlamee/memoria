@@ -169,10 +169,13 @@
 
 		const initialize = async () => {
 			const { default: cytoscape } = await import('cytoscape');
+			const { default: cytoscapeDagre } = await import('cytoscape-dagre');
 
 			if (isUnmounted) {
 				return;
 			}
+
+			cytoscape.use(cytoscapeDagre);
 
 			const elements: ElementDefinition[] = [
 				...graph.nodes.map((node) => ({
@@ -201,19 +204,7 @@
 			cy = cytoscape({
 				container,
 				elements,
-				layout: {
-					name: 'cose',
-					animate: false,
-					nodeRepulsion: () => 6400,
-					idealEdgeLength: () => 60,
-					edgeElasticity: () => 48,
-					gravity: 0.25,
-					numIter: 500,
-					padding: 24,
-					randomize: true,
-					componentSpacing: 42,
-					nestingFactor: 1.2
-				} as never,
+				layout: { name: 'preset' },
 				userPanningEnabled: true,
 				userZoomingEnabled: true,
 				boxSelectionEnabled: false,
@@ -228,9 +219,9 @@
 							width: 'mapData(totalTokens, 64, 1200, 12, 24)',
 							height: 'mapData(totalTokens, 64, 1200, 12, 24)',
 							shape: 'ellipse',
-							'background-color': 'rgba(140, 160, 220, 0.25)',
+							'background-color': 'rgba(16, 16, 16, 0.12)',
 							'border-width': 1.5,
-							'border-color': 'rgba(140, 165, 220, 0.6)',
+							'border-color': 'rgba(16, 16, 16, 0.32)',
 							'overlay-opacity': 0,
 							opacity: 1,
 							'transition-property': 'opacity, border-width, border-color, background-color',
@@ -246,8 +237,8 @@
 					{
 						selector: 'node.graph-node--root',
 						style: {
-							'background-color': 'rgba(72, 194, 136, 0.34)',
-							'border-color': 'rgba(72, 194, 136, 0.9)',
+							'background-color': 'rgba(24, 111, 101, 0.22)',
+							'border-color': 'rgba(24, 111, 101, 0.7)',
 							'border-width': 2.3
 						}
 					},
@@ -255,7 +246,7 @@
 						selector: 'node:selected',
 						style: {
 							'border-width': 2.7,
-							'border-color': 'rgba(255, 255, 255, 0.92)',
+							'border-color': 'rgba(16, 16, 16, 0.85)',
 							'overlay-opacity': 0
 						}
 					},
@@ -264,9 +255,9 @@
 						style: {
 							width: 1,
 							'curve-style': 'bezier',
-							'line-color': 'rgba(130, 100, 210, 0.28)',
+							'line-color': 'rgba(16, 16, 16, 0.18)',
 							'target-arrow-shape': 'triangle',
-							'target-arrow-color': 'rgba(130, 100, 210, 0.32)',
+							'target-arrow-color': 'rgba(16, 16, 16, 0.22)',
 							'arrow-scale': 0.45,
 							opacity: 0.82,
 							'transition-property': 'opacity, width, line-color, target-arrow-color',
@@ -283,13 +274,70 @@
 						selector: 'edge:selected',
 						style: {
 							width: 1.8,
-							'line-color': 'rgba(200, 140, 255, 0.8)',
-							'target-arrow-color': 'rgba(200, 140, 255, 0.8)',
+							'line-color': 'rgba(228, 94, 41, 0.6)',
+							'target-arrow-color': 'rgba(228, 94, 41, 0.6)',
 							opacity: 1
 						}
 					}
 				] as never
 			});
+
+			const components = cy.elements().components();
+
+			if (components.length <= 1) {
+				cy.elements()
+					.layout({
+						name: 'dagre',
+						rankDir: 'TB',
+						nodeSep: 40,
+						rankSep: 60,
+						edgeSep: 20,
+						ranker: 'network-simplex',
+						animate: false,
+						fit: true,
+						padding: 24
+					} as never)
+					.run();
+			} else {
+				components.sort((a, b) => {
+					const aId = a.nodes().map((n) => n.id()).sort()[0] ?? '';
+					const bId = b.nodes().map((n) => n.id()).sort()[0] ?? '';
+					return aId.localeCompare(bId);
+				});
+
+				const w = container.clientWidth || 800;
+				const h = container.clientHeight || 600;
+				const cols = Math.max(1, Math.round(Math.sqrt(components.length * (w / h))));
+				const rows = Math.ceil(components.length / cols);
+				const cellW = w / cols;
+				const cellH = h / rows;
+
+				for (let i = 0; i < components.length; i++) {
+					components[i]
+						.layout({
+							name: 'dagre',
+							rankDir: 'TB',
+							nodeSep: 24,
+							rankSep: 36,
+							edgeSep: 12,
+							ranker: 'network-simplex',
+							animate: false,
+							fit: false,
+							padding: 0
+						} as never)
+						.run();
+
+					const col = i % cols;
+					const row = Math.floor(i / cols);
+					const bb = components[i].boundingBox();
+					const dx = cellW * (col + 0.5) - (bb.x1 + bb.x2) / 2;
+					const dy = cellH * (row + 0.5) - (bb.y1 + bb.y2) / 2;
+
+					components[i].nodes().shift({ x: dx, y: dy });
+				}
+
+				cy.fit(undefined, 24);
+			}
 
 			const emitNodeSelection = (nodeId: string) => {
 				onNodeSelect?.(nodeId);

@@ -82,8 +82,11 @@
 
 		const initialize = async () => {
 			const { default: cytoscape } = await import('cytoscape');
+			const { default: cytoscapeDagre } = await import('cytoscape-dagre');
 
 			if (isUnmounted) return;
+
+			cytoscape.use(cytoscapeDagre);
 
 			const elements: ElementDefinition[] = [
 				...graph.nodes.map((node) => ({
@@ -116,17 +119,16 @@
 				container,
 				elements,
 				layout: {
-					name: 'cose',
+					name: 'dagre',
+					rankDir: 'TB',
+					nodeSep: 30,
+					rankSep: 45,
+					edgeSep: 16,
+					ranker: 'network-simplex',
+					spacingFactor: 1.4,
 					animate: false,
-					nodeRepulsion: () => 6400,
-					idealEdgeLength: () => 60,
-					edgeElasticity: () => 48,
-					gravity: 0.25,
-					numIter: 500,
-					padding: 24,
-					randomize: true,
-					componentSpacing: 42,
-					nestingFactor: 1.2
+					padding: 14,
+					fit: true
 				} as never,
 				userPanningEnabled: true,
 				userZoomingEnabled: false,

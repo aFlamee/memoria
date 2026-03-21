@@ -532,14 +532,28 @@ p {
 }
 
 .session-workspace {
+	--session-workspace-gap: 1rem;
+	--session-chrome-height: 5.75rem;
+	--session-sidebar-top: calc(
+		var(--session-workspace-gap) + var(--session-chrome-height) + var(--session-workspace-gap)
+	);
 	position: fixed;
 	inset: 0;
 	width: 100dvw;
 	height: 100dvh;
 	overflow: hidden;
 	background:
+		linear-gradient(180deg, rgba(16, 16, 16, 0.02), transparent 28%),
+		repeating-linear-gradient(
+			90deg,
+			transparent 0,
+			transparent 79px,
+			rgba(16, 16, 16, 0.04) 79px,
+			rgba(16, 16, 16, 0.04) 80px
+		),
 		radial-gradient(circle at top left, rgba(228, 94, 41, 0.12), transparent 28%),
-		radial-gradient(circle at top right, rgba(24, 111, 101, 0.1), transparent 24%);
+		radial-gradient(circle at top right, rgba(24, 111, 101, 0.1), transparent 24%),
+		var(--bg);
 }
 
 .session-workspace__graph-surface,
@@ -554,10 +568,10 @@ p {
 
 .session-workspace__chrome {
 	position: absolute;
-	top: 1rem;
-	left: 1rem;
-	right: 1rem;
-	z-index: 3;
+	top: var(--session-workspace-gap);
+	left: var(--session-workspace-gap);
+	right: var(--session-workspace-gap);
+	z-index: 5;
 	display: flex;
 	align-items: flex-start;
 	justify-content: space-between;
@@ -632,11 +646,11 @@ p {
 }
 
 .session-workspace__sidebar {
-	top: 6.75rem;
-	left: 1rem;
-	bottom: 1rem;
+	top: var(--session-sidebar-top);
+	left: var(--session-workspace-gap);
+	bottom: var(--session-workspace-gap);
 	z-index: 4;
-	width: min(420px, calc(100dvw - 2rem));
+	width: min(420px, calc(100dvw - (var(--session-workspace-gap) * 2)));
 	padding: 1rem;
 	border: 1.5px solid var(--line);
 	border-radius: var(--radius);
@@ -754,23 +768,23 @@ p {
 
 .session-graph-explorer__canvas {
 	background:
-		radial-gradient(ellipse at 30% 40%, rgba(130, 100, 200, 0.1), transparent 60%),
-		radial-gradient(ellipse at 70% 60%, rgba(80, 220, 180, 0.07), transparent 50%),
+		radial-gradient(ellipse at 30% 40%, rgba(228, 94, 41, 0.06), transparent 55%),
+		radial-gradient(ellipse at 70% 60%, rgba(24, 111, 101, 0.05), transparent 50%),
 		repeating-linear-gradient(
 			0deg,
 			transparent 0,
 			transparent 28px,
-			rgba(140, 160, 200, 0.06) 28px,
-			rgba(140, 160, 200, 0.06) 29px
+			rgba(16, 16, 16, 0.04) 28px,
+			rgba(16, 16, 16, 0.04) 29px
 		),
 		repeating-linear-gradient(
 			90deg,
 			transparent 0,
 			transparent 28px,
-			rgba(140, 160, 200, 0.06) 28px,
-			rgba(140, 160, 200, 0.06) 29px
+			rgba(16, 16, 16, 0.04) 28px,
+			rgba(16, 16, 16, 0.04) 29px
 		),
-		linear-gradient(135deg, #1a1d26 0%, #12151c 50%, #0e1117 100%);
+		var(--bg);
 	cursor: grab;
 }
 
@@ -920,6 +934,10 @@ p {
 }
 
 @media (max-width: 560px) {
+	.session-workspace {
+		--session-workspace-gap: 0.5rem;
+	}
+
 	.instance-tile__header,
 	.stack-list__row {
 		flex-direction: column;
@@ -958,18 +976,17 @@ p {
 	}
 
 	.session-workspace__sidebar {
-		top: auto;
-		left: 0.5rem;
-		right: 0.5rem;
-		bottom: 0.5rem;
+		top: var(--session-sidebar-top);
+		left: var(--session-workspace-gap);
+		right: var(--session-workspace-gap);
+		bottom: var(--session-workspace-gap);
 		width: auto;
-		max-height: 60dvh;
 	}
 
 	.session-workspace__chrome {
-		top: 0.5rem;
-		left: 0.5rem;
-		right: 0.5rem;
+		top: var(--session-workspace-gap);
+		left: var(--session-workspace-gap);
+		right: var(--session-workspace-gap);
 		padding: 0.75rem 0.8rem;
 	}
 }

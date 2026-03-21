@@ -13,8 +13,10 @@
 	let selectedNodeId = $state<string | null>(null);
 	let selectedEdgeId = $state<string | null>(null);
 	let focusRevision = $state(0);
+	let sessionChromeHeight = $state(0);
 	let focusRevisionCounter = 0;
 	let lastSessionId: string | null = null;
+	let chromeElement = $state<HTMLDivElement | null>(null);
 
 	const graphIndex = $derived(
 		data.sessionView ? buildSessionGraphIndex(data.sessionView.session) : null
@@ -48,6 +50,28 @@
 		return () => {
 			document.documentElement.classList.remove('session-workspace-active');
 			document.body.classList.remove('session-workspace-active');
+		};
+	});
+
+	$effect(() => {
+		if (!chromeElement || typeof ResizeObserver === 'undefined') {
+			return;
+		}
+
+		const updateChromeHeight = () => {
+			sessionChromeHeight = Math.ceil(chromeElement?.getBoundingClientRect().height ?? 0);
+		};
+
+		updateChromeHeight();
+
+		const observer = new ResizeObserver(() => {
+			updateChromeHeight();
+		});
+
+		observer.observe(chromeElement);
+
+		return () => {
+			observer.disconnect();
 		};
 	});
 
@@ -148,7 +172,10 @@
 </script>
 
 {#if data.sessionView && graphIndex}
-	<div class="session-workspace">
+	<div
+		class="session-workspace"
+		style={`--session-chrome-height: ${sessionChromeHeight}px;`}
+	>
 		<div class="session-workspace__graph-surface">
 			{#key data.sessionView.session.sessionId}
 				<SessionGraphExplorer
@@ -169,7 +196,7 @@
 			{/key}
 		</div>
 
-		<div class="session-workspace__chrome">
+		<div class="session-workspace__chrome" bind:this={chromeElement}>
 			<div class="session-workspace__chrome-main">
 				<a class="session-workspace__back" href="../../">Back</a>
 				<div class="session-workspace__identity">
