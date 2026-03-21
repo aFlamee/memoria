@@ -1,119 +1,14 @@
 import { v } from 'convex/values';
 
-import { internal } from './_generated/api';
+import type { Doc } from './_generated/dataModel';
 import { query, type QueryCtx } from './_generated/server';
 
-type StoreInstance = {
-	instance_id: string;
-	name: string;
-	host: string;
-	port: number;
-	environment: 'development' | 'production' | 'staging';
-	os: string | null;
-	arch: string | null;
-	zeroclaw_version: string | null;
-	model_default: string | null;
-	registered_at: string;
-	last_seen_at: string | null;
-	status: 'online' | 'offline' | 'idle';
-	is_pinned: boolean;
-	tags: string[];
-	session_count: number;
-};
-
-type StoreWeeklyUsage = {
-	instance_id: string;
-	instance_name: string;
-	sessions: number;
-	tasks: number;
-	actions: number;
-	total_tokens: number;
-	total_cost_usd: number;
-};
-
-type StoreSession = {
-	session_id: string;
-	instance_id: string;
-	trigger: string;
-	working_dir: string | null;
-	git_repo: string | null;
-	git_branch: string | null;
-	git_commit: string | null;
-	model_override: string | null;
-	started_at: string;
-	ended_at: string | null;
-	duration_ms: number | null;
-	status: 'running' | 'completed' | 'failed' | 'killed';
-	total_tokens: number;
-	total_cost_usd: number;
-	task_count: number;
-	action_count: number;
-	exit_code: number | null;
-	notes: string | null;
-};
-
-type StoreTask = {
-	task_id: string;
-	session_id: string;
-	instance_id: string;
-	title: string;
-	description: string | null;
-	type: string;
-	technologies: string[];
-	status: 'in_progress' | 'completed' | 'failed';
-	priority: 'low' | 'medium' | 'high';
-	started_at: string;
-	completed_at: string | null;
-	duration_ms: number | null;
-	total_tokens: number;
-	thinking_tokens: number;
-	output_tokens: number;
-	total_cost_usd: number;
-	action_count: number;
-	is_bookmarked: boolean;
-	rating: number | null;
-	tags: string[];
-	error: string | null;
-};
-
-type StoreAction = {
-	action_id: string;
-	task_id: string;
-	instance_id: string;
-	type: string;
-	tool_name: string;
-	command: string | null;
-	file_path: string | null;
-	file_size_bytes: number | null;
-	stdout: string | null;
-	stderr: string | null;
-	exit_code: number | null;
-	permission_level: string;
-	risk_score: number;
-	is_flagged: boolean;
-	flag_reason: string | null;
-	status: string;
-	started_at: string;
-	ended_at: string;
-	duration_ms: number;
-	sequence: number | null;
-	step_name: string | null;
-	reasoning: string | null;
-	thinking_tokens: number;
-	output_tokens: number;
-	total_tokens: number;
-	model_used: string | null;
-	cost_usd: number;
-	retry_count: number;
-	is_recovery: boolean;
-};
-
-type StoreSessionCostBreakdown = {
-	session_id: string;
-	total_cost_usd: number;
-	by_task: Array<{ task_id: string; title: string; cost_usd: number; tokens: number }>;
-	by_tool: Array<{ tool_name: string; action_count: number; cost_usd: number }>;
-};
+type InstanceDoc = Doc<'instances'>;
+type SessionDoc = Doc<'sessions'>;
+type TaskDoc = Doc<'tasks'>;
+type ActionDoc = Doc<'actions'>;
+type InstanceWeeklyUsageDoc = Doc<'instanceWeeklyUsage'>;
+type SessionCostBreakdownDoc = Doc<'sessionCostBreakdowns'>;
 
 function formatRelativeTime(isoString: string | null) {
 	if (!isoString) return 'unknown';
@@ -135,239 +30,333 @@ function compactTokens(value: number) {
 	return `${value}`;
 }
 
-function actionTone(action: {
-	sequence: number;
-	status: string;
-	type: string;
-	risk_score: number;
-	is_recovery: boolean;
-}) {
+function actionTone(action: ActionDoc) {
 	if (action.sequence === 1) return 'entry' as const;
-	if (action.is_recovery) return 'exit' as const;
-	if (action.status !== 'success' || action.risk_score >= 0.2) return 'risk' as const;
+	if (action.isRecovery) return 'exit' as const;
+	if (action.status !== 'success' || action.riskScore >= 0.2) return 'risk' as const;
 	if (action.type === 'file_write' || action.type === 'shell') return 'write' as const;
 	return 'core' as const;
 }
 
-async function getSessionTaskTitles(ctx: QueryCtx, sessionId: string): Promise<string[]> {
-	const breakdown: StoreSessionCostBreakdown | null = await ctx.runQuery(
-		internal.observegraphStore.getSessionCostBreakdown,
-		{ sessionId }
-	);
-	if (!breakdown) {
-		return [];
+function instanceLastSeen(instance: InstanceDoc) {
+	return instance.lastSeenAt ?? instance.registeredAt;
+}
+
+function emptyWeeklyUsage(instance: InstanceDoc) {
+	return {
+		instanceId: instance.instanceId,
+		instanceName: instance.name,
+		sessions: 0,
+		tasks: 0,
+		actions: 0,
+		totalTokens: 0,
+		totalCostUsd: 0
+	};
+}
+
+async function findInstanceBySlugOrInstanceId(ctx: QueryCtx, slug: string) {
+	const bySlug = await ctx.db
+		.query('instances')
+		.withIndex('by_slug', (query) => query.eq('slug', slug))
+		.unique();
+	if (bySlug) {
+		return bySlug as InstanceDoc;
 	}
-	return breakdown.by_task.slice(0, 3).map((task: { title: string }) => task.title);
+
+	return (await ctx.db
+		.query('instances')
+		.withIndex('by_instanceId', (query) => query.eq('instanceId', slug))
+		.unique()) as InstanceDoc | null;
+}
+
+async function findWeeklyUsage(ctx: QueryCtx, instanceId: string) {
+	return (await ctx.db
+		.query('instanceWeeklyUsage')
+		.withIndex('by_instanceId', (query) => query.eq('instanceId', instanceId))
+		.unique()) as InstanceWeeklyUsageDoc | null;
+}
+
+async function findSessionBySessionId(ctx: QueryCtx, sessionId: string) {
+	return (await ctx.db
+		.query('sessions')
+		.withIndex('by_sessionId', (query) => query.eq('sessionId', sessionId))
+		.unique()) as SessionDoc | null;
+}
+
+async function findSessionCostBreakdown(ctx: QueryCtx, sessionId: string) {
+	return (await ctx.db
+		.query('sessionCostBreakdowns')
+		.withIndex('by_sessionId', (query) => query.eq('sessionId', sessionId))
+		.unique()) as SessionCostBreakdownDoc | null;
+}
+
+async function listInstances(ctx: QueryCtx) {
+	const instances: InstanceDoc[] = [];
+	for await (const row of ctx.db.query('instances')) {
+		instances.push(row as InstanceDoc);
+	}
+
+	instances.sort((left, right) => {
+		if (left.isPinned !== right.isPinned) {
+			return left.isPinned ? -1 : 1;
+		}
+
+		return instanceLastSeen(right).localeCompare(instanceLastSeen(left));
+	});
+
+	return instances;
+}
+
+async function listSessionsForInstance(ctx: QueryCtx, instanceId: string) {
+	const sessions: SessionDoc[] = [];
+	for await (const row of ctx.db
+		.query('sessions')
+		.withIndex('by_instanceId_and_startedAt', (query) => query.eq('instanceId', instanceId))
+		.order('desc')) {
+		sessions.push(row as SessionDoc);
+	}
+
+	return sessions;
+}
+
+async function listTasksForSession(ctx: QueryCtx, sessionId: string) {
+	const tasks: TaskDoc[] = [];
+	for await (const row of ctx.db
+		.query('tasks')
+		.withIndex('by_sessionId_and_startedAt', (query) => query.eq('sessionId', sessionId))
+		.order('asc')) {
+		tasks.push(row as TaskDoc);
+	}
+
+	return tasks;
+}
+
+async function listActionsForTask(ctx: QueryCtx, taskId: string) {
+	const actions: ActionDoc[] = [];
+	for await (const row of ctx.db
+		.query('actions')
+		.withIndex('by_taskId_and_sequence', (query) => query.eq('taskId', taskId))
+		.order('asc')) {
+		actions.push(row as ActionDoc);
+	}
+
+	return actions;
+}
+
+function mapInstanceSummary(instance: InstanceDoc, usage: InstanceWeeklyUsageDoc | null) {
+	const weeklyUsage = usage ?? emptyWeeklyUsage(instance);
+	return {
+		instanceId: instance.instanceId,
+		slug: instance.slug,
+		name: instance.name,
+		status: instance.status,
+		environment: instance.environment,
+		modelDefault: instance.modelDefault ?? 'unknown',
+		host: instance.host,
+		lastSeenAt: instanceLastSeen(instance),
+		lastSeenLabel: formatRelativeTime(instanceLastSeen(instance)),
+		runningTasks: instance.metrics.runningTasks,
+		completedToday: instance.metrics.completedToday,
+		sessionCount7d: weeklyUsage.sessions,
+		taskCount7d: weeklyUsage.tasks,
+		actionCount7d: weeklyUsage.actions,
+		totalTokens7d: weeklyUsage.totalTokens,
+		totalTokens7dLabel: compactTokens(weeklyUsage.totalTokens),
+		totalCostUsd7d: weeklyUsage.totalCostUsd,
+		totalCostUsd7dLabel: currency(weeklyUsage.totalCostUsd),
+		tags: instance.tags
+	};
+}
+
+function mapInstanceProfile(instance: InstanceDoc, usage: InstanceWeeklyUsageDoc | null) {
+	const weeklyUsage = usage ?? emptyWeeklyUsage(instance);
+	return {
+		instanceId: instance.instanceId,
+		slug: instance.slug,
+		name: instance.name,
+		status: instance.status,
+		environment: instance.environment,
+		modelDefault: instance.modelDefault ?? 'unknown',
+		host: instance.host,
+		os: instance.os ?? 'unknown',
+		arch: instance.arch ?? 'unknown',
+		zeroclawVersion: instance.zeroclawVersion ?? 'unknown',
+		lastSeenAt: instanceLastSeen(instance),
+		lastSeenLabel: formatRelativeTime(instanceLastSeen(instance)),
+		totalTokens7dLabel: compactTokens(weeklyUsage.totalTokens),
+		totalCostUsd7dLabel: currency(weeklyUsage.totalCostUsd),
+		metrics: {
+			...instance.metrics,
+			sessionCount7d: weeklyUsage.sessions,
+			taskCount7d: weeklyUsage.tasks,
+			actionCount7d: weeklyUsage.actions,
+			totalTokens7d: weeklyUsage.totalTokens,
+			totalCostUsd7d: weeklyUsage.totalCostUsd
+		},
+		tags: instance.tags
+	};
+}
+
+function taskTitlesForSession(tasks: TaskDoc[], breakdown: SessionCostBreakdownDoc | null) {
+	const titlesFromBreakdown = breakdown?.byTask.map((task) => task.title).filter((title) => title.length > 0) ?? [];
+	if (titlesFromBreakdown.length > 0) {
+		return titlesFromBreakdown.slice(0, 3);
+	}
+
+	return tasks.slice(0, 3).map((task) => task.title);
+}
+
+function mapSessionSummary(
+	session: SessionDoc,
+	sessionTasks: TaskDoc[],
+	breakdown: SessionCostBreakdownDoc | null
+) {
+	return {
+		sessionId: session.sessionId,
+		trigger: session.trigger,
+		status: session.status,
+		startedAt: session.startedAt,
+		durationMs: session.durationMs ?? 0,
+		totalTokens: session.totalTokens,
+		totalTokensLabel: compactTokens(session.totalTokens),
+		totalCostUsd: session.totalCostUsd,
+		totalCostUsdLabel: currency(session.totalCostUsd),
+		taskCount: session.taskCount,
+		actionCount: session.actionCount,
+		gitBranch: session.gitBranch ?? '',
+		notes: session.notes,
+		taskTitles: taskTitlesForSession(sessionTasks, breakdown)
+	};
+}
+
+function mapTaskGraph(task: TaskDoc, actions: ActionDoc[]) {
+	const nodes = actions.map((action) => ({
+		id: action.actionId,
+		actionId: action.actionId,
+		label: action.stepName || action.actionId,
+		toolName: action.toolName,
+		type: action.type,
+		status: action.status,
+		durationMs: action.durationMs,
+		totalTokens: action.totalTokens,
+		riskScore: action.riskScore,
+		permissionLevel: action.permissionLevel,
+		tone: actionTone(action)
+	}));
+
+	const edges = actions.slice(0, -1).map((action, index) => {
+		const nextAction = actions[index + 1];
+		const sourceLabel = action.stepName || action.actionId;
+		const targetLabel = nextAction.stepName || nextAction.actionId;
+
+		return {
+			id: `${action.actionId}__${nextAction.actionId}`,
+			source: action.actionId,
+			target: nextAction.actionId,
+			label: `${sourceLabel} -> ${targetLabel}`,
+			sourceLabel,
+			targetLabel,
+			traversalCount: 1,
+			successRate: action.status === 'success' && nextAction.status === 'success' ? 1 : 0,
+			totalTokens: action.totalTokens + nextAction.totalTokens,
+			avgLatencyMs: Math.round((action.durationMs + nextAction.durationMs) / 2)
+		};
+	});
+
+	return {
+		taskId: task.taskId,
+		title: task.title,
+		status: task.status,
+		durationMs: task.durationMs ?? 0,
+		totalTokens: task.totalTokens,
+		totalTokensLabel: compactTokens(task.totalTokens),
+		totalCostUsd: task.totalCostUsd,
+		totalCostUsdLabel: currency(task.totalCostUsd),
+		actionCount: task.actionCount,
+		nodes,
+		edges
+	};
 }
 
 export const dashboard = query({
 	args: {},
-	handler: async (ctx): Promise<{
-		generatedAt: string;
-		instances: Array<Record<string, unknown>>;
-	}> => {
-		const instances: StoreInstance[] = await ctx.runQuery(internal.observegraphStore.listInstances, {});
-		const withUsage: Array<{ instance: StoreInstance; usage: StoreWeeklyUsage | null }> = await Promise.all(
-			instances.map(async (instance: StoreInstance) => {
-				const usage: StoreWeeklyUsage | null = await ctx.runQuery(internal.observegraphStore.getWeeklyUsage, {
-					instanceId: instance.instance_id
-				});
-				return { instance, usage };
-			})
+	handler: async (ctx) => {
+		const instances = await listInstances(ctx);
+		const withUsage = await Promise.all(
+			instances.map(async (instance) => ({
+				instance,
+				usage: await findWeeklyUsage(ctx, instance.instanceId)
+			}))
 		);
 
 		return {
 			generatedAt: new Date().toISOString(),
-			instances: withUsage.map(({ instance, usage }: { instance: StoreInstance; usage: StoreWeeklyUsage | null }) => ({
-				slug: instance.instance_id,
-				name: instance.name,
-				status: instance.status,
-				environment: instance.environment,
-				modelDefault: instance.model_default ?? 'unknown',
-				host: instance.host,
-				lastSeenAt: instance.last_seen_at ?? instance.registered_at,
-				lastSeenLabel: formatRelativeTime(instance.last_seen_at ?? instance.registered_at),
-				runningTasks: 0,
-				completedToday: 0,
-				sessionCount7d: usage?.sessions ?? 0,
-				taskCount7d: usage?.tasks ?? 0,
-				actionCount7d: usage?.actions ?? 0,
-				totalTokens7d: usage?.total_tokens ?? 0,
-				totalTokens7dLabel: compactTokens(usage?.total_tokens ?? 0),
-				totalCostUsd7d: usage?.total_cost_usd ?? 0,
-				totalCostUsd7dLabel: currency(usage?.total_cost_usd ?? 0),
-				tags: instance.tags
-			}))
+			instances: withUsage.map(({ instance, usage }) => mapInstanceSummary(instance, usage))
 		};
 	}
 });
 
 export const instanceOverview = query({
 	args: { slug: v.string() },
-	handler: async (ctx, args): Promise<Record<string, unknown> | null> => {
-		const instance: StoreInstance | null = await ctx.runQuery(internal.observegraphStore.getInstance, {
-			instanceId: args.slug
-		});
+	handler: async (ctx, args) => {
+		const instance = await findInstanceBySlugOrInstanceId(ctx, args.slug);
 		if (!instance) {
 			return null;
 		}
 
+		const [usage, sessions] = await Promise.all([
+			findWeeklyUsage(ctx, instance.instanceId),
+			listSessionsForInstance(ctx, instance.instanceId)
+		]);
+
+		const recentSessions = await Promise.all(
+			sessions.slice(0, 8).map(async (session) => {
+				const [sessionTasks, breakdown] = await Promise.all([
+					listTasksForSession(ctx, session.sessionId),
+					findSessionCostBreakdown(ctx, session.sessionId)
+				]);
+
+				return mapSessionSummary(session, sessionTasks, breakdown);
+			})
+		);
+
 		return {
-			instance: {
-				slug: instance.instance_id,
-				name: instance.name,
-				status: instance.status,
-				environment: instance.environment,
-				modelDefault: instance.model_default ?? 'unknown',
-				host: instance.host,
-				os: instance.os ?? 'unknown',
-				arch: instance.arch ?? 'unknown',
-				zeroclawVersion: instance.zeroclaw_version ?? 'unknown',
-				lastSeenAt: instance.last_seen_at ?? instance.registered_at,
-				lastSeenLabel: formatRelativeTime(instance.last_seen_at ?? instance.registered_at),
-				totalTokens7dLabel: '0',
-				totalCostUsd7dLabel: '$0.00',
-				metrics: {
-					sessionCount7d: 0,
-					taskCount7d: 0,
-					actionCount7d: 0,
-					completedToday: 0,
-					runningTasks: 0,
-					totalTokens7d: 0,
-					totalCostUsd7d: 0
-				},
-				tags: instance.tags
-			},
-			sessions: []
+			instance: mapInstanceProfile(instance, usage),
+			sessions: recentSessions
 		};
 	}
 });
 
 export const sessionDetail = query({
 	args: { slug: v.string(), sessionId: v.string() },
-	handler: async (ctx, args): Promise<Record<string, unknown> | null> => {
-		const instance: StoreInstance | null = await ctx.runQuery(internal.observegraphStore.getInstance, {
-			instanceId: args.slug
-		});
-		const session: StoreSession | null = await ctx.runQuery(internal.observegraphStore.getSession, {
-			sessionId: args.sessionId
-		});
-		if (!instance || !session || session.instance_id !== args.slug) {
+	handler: async (ctx, args) => {
+		const [instance, session] = await Promise.all([
+			findInstanceBySlugOrInstanceId(ctx, args.slug),
+			findSessionBySessionId(ctx, args.sessionId)
+		]);
+
+		if (!instance || !session || session.instanceId !== instance.instanceId) {
 			return null;
 		}
 
-		const breakdown: StoreSessionCostBreakdown | null = await ctx.runQuery(
-			internal.observegraphStore.getSessionCostBreakdown,
-			{
-			sessionId: args.sessionId
-			}
-		);
-		const tasks: Array<Record<string, unknown> | null> = await Promise.all(
-			(breakdown?.by_task ?? []).map(async (taskSummary: { task_id: string }) => {
-				const task: StoreTask | null = await ctx.runQuery(internal.observegraphStore.getTask, {
-					taskId: taskSummary.task_id
-				});
-				const actions: StoreAction[] | null = await ctx.runQuery(internal.observegraphStore.getTaskActions, {
-					taskId: taskSummary.task_id
-				});
-				if (!task || !actions) {
-					return null;
-				}
+		const [usage, breakdown, tasks] = await Promise.all([
+			findWeeklyUsage(ctx, instance.instanceId),
+			findSessionCostBreakdown(ctx, session.sessionId),
+			listTasksForSession(ctx, session.sessionId)
+		]);
 
-				const nodes = actions.map((action: StoreAction) => ({
-					id: action.action_id,
-					actionId: action.action_id,
-					label: action.step_name ?? action.action_id,
-					toolName: action.tool_name,
-					type: action.type,
-					status: action.status,
-					durationMs: action.duration_ms,
-					totalTokens: action.total_tokens,
-					riskScore: action.risk_score,
-					permissionLevel: action.permission_level,
-					tone: actionTone({
-						sequence: action.sequence ?? 0,
-						status: action.status,
-						type: action.type,
-						risk_score: action.risk_score,
-						is_recovery: action.is_recovery
-					})
-				}));
-
-				const edges = actions.slice(0, -1).map((action: StoreAction, index: number) => {
-					const nextAction = actions[index + 1];
-					return {
-						id: `${action.action_id}__${nextAction.action_id}`,
-						source: action.action_id,
-						target: nextAction.action_id,
-						label: `${action.step_name ?? action.action_id} -> ${nextAction.step_name ?? nextAction.action_id}`,
-						sourceLabel: action.step_name ?? action.action_id,
-						targetLabel: nextAction.step_name ?? nextAction.action_id,
-						traversalCount: 1,
-						successRate: action.status === 'success' && nextAction.status === 'success' ? 1 : 0,
-						totalTokens: action.total_tokens + nextAction.total_tokens,
-						avgLatencyMs: Math.round((action.duration_ms + nextAction.duration_ms) / 2)
-					};
-				});
-
-				return {
-					taskId: task.task_id,
-					title: task.title,
-					status: task.status,
-					durationMs: task.duration_ms ?? 0,
-					totalTokens: task.total_tokens,
-					totalTokensLabel: compactTokens(task.total_tokens),
-					totalCostUsd: task.total_cost_usd,
-					totalCostUsdLabel: currency(task.total_cost_usd),
-					actionCount: task.action_count,
-					nodes,
-					edges
-				};
+		const taskGraphs = await Promise.all(
+			tasks.map(async (task) => {
+				const actions = await listActionsForTask(ctx, task.taskId);
+				return mapTaskGraph(task, actions);
 			})
 		);
 
 		return {
-			instance: {
-				slug: instance.instance_id,
-				name: instance.name,
-				status: instance.status,
-				environment: instance.environment,
-				modelDefault: instance.model_default ?? 'unknown',
-				host: instance.host,
-				os: instance.os ?? 'unknown',
-				arch: instance.arch ?? 'unknown',
-				zeroclawVersion: instance.zeroclaw_version ?? 'unknown',
-				lastSeenAt: instance.last_seen_at ?? instance.registered_at,
-				lastSeenLabel: formatRelativeTime(instance.last_seen_at ?? instance.registered_at),
-				totalTokens7dLabel: '0',
-				totalCostUsd7dLabel: '$0.00',
-				metrics: {
-					sessionCount7d: 0,
-					taskCount7d: 0,
-					actionCount7d: 0,
-					completedToday: 0,
-					runningTasks: 0,
-					totalTokens7d: 0,
-					totalCostUsd7d: 0
-				},
-				tags: instance.tags
-			},
+			instance: mapInstanceProfile(instance, usage),
 			session: {
-				sessionId: session.session_id,
-				trigger: session.trigger,
-				status: session.status,
-				startedAt: session.started_at,
-				durationMs: session.duration_ms ?? 0,
-				totalTokens: session.total_tokens,
-				totalTokensLabel: compactTokens(session.total_tokens),
-				totalCostUsd: session.total_cost_usd,
-				totalCostUsdLabel: currency(session.total_cost_usd),
-				taskCount: session.task_count,
-				actionCount: session.action_count,
-				gitBranch: session.git_branch ?? '',
-				notes: session.notes,
-				taskTitles: await getSessionTaskTitles(ctx, args.sessionId),
-				tasks: tasks.filter((task: Record<string, unknown> | null): task is Record<string, unknown> => task !== null)
+				...mapSessionSummary(session, tasks, breakdown),
+				tasks: taskGraphs
 			}
 		};
 	}

@@ -173,6 +173,7 @@ async function loadMockDataset(): Promise<MockDataset> {
 
 function mapInstanceProfile(instance: InstanceRecord) {
 	return {
+		instanceId: instance.instanceId,
 		slug: instance.slug,
 		name: instance.name,
 		status: instance.status,
@@ -228,6 +229,7 @@ export async function getMockDashboardData(): Promise<DashboardData> {
 	return {
 		generatedAt: new Date().toISOString(),
 		instances: ordered.map((instance) => ({
+			instanceId: instance.instanceId,
 			slug: instance.slug,
 			name: instance.name,
 			status: instance.status,

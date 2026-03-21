@@ -15,7 +15,9 @@ function getConvexClient() {
 		return null;
 	}
 	if (!publicEnv.PUBLIC_CONVEX_URL) {
-		return null;
+		throw new Error(
+			'PUBLIC_CONVEX_URL is required when OBSERVEGRAPH_USE_MOCK_DATA is disabled.'
+		);
 	}
 	return new ConvexHttpClient(publicEnv.PUBLIC_CONVEX_URL);
 }
@@ -26,12 +28,7 @@ export async function getDashboardData(): Promise<DashboardData> {
 		return getMockDashboardData();
 	}
 
-	try {
-		return (await client.query(api.observegraph.dashboard, {})) as DashboardData;
-	} catch (error) {
-		console.warn('Falling back to local mock dashboard data because Convex is unavailable.', error);
-		return getMockDashboardData();
-	}
+	return (await client.query(api.observegraph.dashboard, {})) as DashboardData;
 }
 
 export async function getInstanceOverview(slug: string): Promise<AgentOverview | null> {
@@ -40,15 +37,7 @@ export async function getInstanceOverview(slug: string): Promise<AgentOverview |
 		return getMockInstanceOverview(slug);
 	}
 
-	try {
-		return (await client.query(api.observegraph.instanceOverview, { slug })) as AgentOverview | null;
-	} catch (error) {
-		console.warn(
-			`Falling back to local mock instance overview for "${slug}" because Convex is unavailable.`,
-			error
-		);
-		return getMockInstanceOverview(slug);
-	}
+	return (await client.query(api.observegraph.instanceOverview, { slug })) as AgentOverview | null;
 }
 
 export async function getSessionDetail(
@@ -60,16 +49,8 @@ export async function getSessionDetail(
 		return getMockSessionDetail(slug, sessionId);
 	}
 
-	try {
-		return (await client.query(api.observegraph.sessionDetail, {
-			slug,
-			sessionId
-		})) as AgentSessionDetail | null;
-	} catch (error) {
-		console.warn(
-			`Falling back to local mock session detail for "${slug}/${sessionId}" because Convex is unavailable.`,
-			error
-		);
-		return getMockSessionDetail(slug, sessionId);
-	}
+	return (await client.query(api.observegraph.sessionDetail, {
+		slug,
+		sessionId
+	})) as AgentSessionDetail | null;
 }

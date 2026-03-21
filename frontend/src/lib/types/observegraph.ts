@@ -1,6 +1,7 @@
 export type InstanceStatus = 'online' | 'offline' | 'idle';
 
 export type InstanceSummary = {
+	instanceId: string;
 	slug: string;
 	name: string;
 	status: InstanceStatus;
@@ -101,6 +102,7 @@ export type SessionDetail = SessionSummary & {
 };
 
 export type InstanceProfile = {
+	instanceId: string;
 	slug: string;
 	name: string;
 	status: InstanceStatus;
