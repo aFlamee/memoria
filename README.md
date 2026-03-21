@@ -1,9 +1,9 @@
 # Memoria
 
-Lokaler Full-Stack-Start für:
+Local full-stack setup for:
 
-- Frontend
-- FastAPI-Backend
+- frontend
+- FastAPI backend
 - Neo4j
 
 ## Start
@@ -13,27 +13,55 @@ cp .env.example .env
 docker compose up --build
 ```
 
-## Zugriff
+## URLs
 
 - Frontend: `http://localhost:5173`
 - API: `http://localhost:8000`
-- API-Doku: `http://localhost:8000/docs`
+- API docs: `http://localhost:8000/docs`
 - Neo4j Browser: `http://localhost:7474`
 
-Backend-Healthcheck:
+Backend health check:
 
 ```bash
 curl http://localhost:8000/health
 ```
 
-## Hinweise
+## First-time Convex setup
 
-- Die gemeinsame Konfiguration liegt in `.env.example`.
-- Das Docker-Frontend startet standardmäßig mit Mockdaten aus `frontend/mockdata/`.
-- `convex dev` ist nicht Teil der Compose.
-- Standard-Zugang für Neo4j: `neo4j / memoriapassword`
+Convex is not required for the default Docker start.
+The Docker frontend uses local mock data by default.
 
-## Nützliche Befehle
+If you want to use a real Convex deployment for local development:
+
+1. Install dependencies in the frontend:
+
+```bash
+cd frontend
+pnpm install
+```
+
+2. Start Convex and create or link a project:
+
+```bash
+npx convex dev
+```
+
+3. Copy the generated values from `frontend/.env.local` into your root `.env` if you want the rest of the project to use the same deployment.
+
+4. To let the frontend use Convex instead of mock data, set this in the root `.env`:
+
+```bash
+OBSERVEGRAPH_USE_MOCK_DATA=false
+```
+
+## Notes
+
+- Shared configuration lives in [`.env.example`](/Users/mochiqt/Repos/memoria/.env.example).
+- The Docker frontend starts with mock data from `frontend/mockdata/`.
+- `convex dev` is not part of the Docker Compose stack.
+- Default Neo4j credentials: `neo4j / memoriapassword`
+
+## Useful commands
 
 ```bash
 docker compose up --build -d
@@ -42,7 +70,7 @@ docker compose logs -f api
 docker compose down
 ```
 
-## Wenn etwas nicht läuft
+## If something fails
 
 ```bash
 docker compose ps
