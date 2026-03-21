@@ -1,33 +1,41 @@
 <script lang="ts">
-	import AgentTile from '$lib/components/AgentTile.svelte';
+	import InstanceTile from '$lib/components/InstanceTile.svelte';
 	import PageShell from '$lib/components/PageShell.svelte';
-	import SectionHeading from '$lib/components/SectionHeading.svelte';
-	import { agentSummaries } from '$lib/data/agents';
+	import type { DashboardData } from '$lib/types/observegraph';
+
+	let { data }: { data: { dashboard: DashboardData } } = $props();
+
+	const summary = $derived([
+		{
+			label: 'Instances',
+			value: String(data.dashboard.instances.length)
+		},
+		{
+			label: 'Live',
+			value: String(
+				data.dashboard.instances.reduce((total, instance) => total + instance.runningTasks, 0)
+			)
+		},
+		{
+			label: 'Defaults',
+			value: String(new Set(data.dashboard.instances.map((instance) => instance.modelDefault)).size)
+		}
+	]);
 </script>
 
-<PageShell
-	title="A square index of operators, memory and toolchains."
-	description="This first pass treats every agent as a record in a hard-edged archive. Pick one tile to open its static knowledge surfaces."
->
-	<section class="landing-intro">
-		<div class="landing-intro__statement">
-			<p>Seed set</p>
-			<strong>{agentSummaries.length} active records in the UI dataset</strong>
-		</div>
-		<div class="landing-intro__statement">
-			<p>Current posture</p>
-			<strong>Visual system first, behavior later</strong>
-		</div>
+<PageShell title="ObserveGraph" description="Open an instance.">
+	<section class="summary-strip" aria-label="Fleet summary">
+		{#each summary as item}
+			<div class="summary-strip__card">
+				<span>{item.label}</span>
+				<strong>{item.value}</strong>
+			</div>
+		{/each}
 	</section>
 
-	<SectionHeading
-		title="Each tile is an entry point into a frozen knowledge surface"
-		copy="The structure is intentionally rigid and square so later activity states, queues and graph interactions have a disciplined frame to sit inside."
-	/>
-
-	<section class="agent-grid" aria-label="Agent list">
-		{#each agentSummaries as agent (agent.slug)}
-			<AgentTile {agent} />
+	<section class="agent-grid" aria-label="Instance list">
+		{#each data.dashboard.instances as instance (instance.slug)}
+			<InstanceTile {instance} />
 		{/each}
 	</section>
 </PageShell>

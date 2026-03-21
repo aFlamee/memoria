@@ -4,13 +4,15 @@
 		copy
 	}: {
 		title: string;
-		copy: string;
+		copy?: string;
 	} = $props();
 </script>
 
 <div class="section-heading">
 	<div>
 		<h2>{title}</h2>
-		<p>{copy}</p>
+		{#if copy}
+			<p>{copy}</p>
+		{/if}
 	</div>
 </div>

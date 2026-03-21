@@ -1,13 +1,13 @@
 <script lang="ts">
-	import type { AgentStatus } from '$lib/types/agents';
+	import type { InstanceStatus } from '$lib/types/observegraph';
 
-	const labels: Record<AgentStatus, string> = {
-		active: 'ACTIVE',
+	const labels: Record<InstanceStatus, string> = {
+		online: 'ONLINE',
 		idle: 'IDLE',
-		training: 'TRAINING'
+		offline: 'OFFLINE'
 	};
 
-	let { status }: { status: AgentStatus } = $props();
+	let { status }: { status: InstanceStatus } = $props();
 </script>
 
 <span class={`status-badge status-badge--${status}`}>{labels[status]}</span>

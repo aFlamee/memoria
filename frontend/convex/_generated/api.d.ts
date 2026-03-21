@@ -8,13 +8,23 @@
  * @module
  */
 
+import type * as observegraph from "../observegraph.js";
+import type * as observegraphNeo4j from "../observegraphNeo4j.js";
+import type * as observegraphSeed from "../observegraphSeed.js";
+import type * as observegraphValidators from "../observegraphValidators.js";
+
 import type {
   ApiFromModules,
   FilterApi,
   FunctionReference,
 } from "convex/server";
 
-declare const fullApi: ApiFromModules<{}>;
+declare const fullApi: ApiFromModules<{
+  observegraph: typeof observegraph;
+  observegraphNeo4j: typeof observegraphNeo4j;
+  observegraphSeed: typeof observegraphSeed;
+  observegraphValidators: typeof observegraphValidators;
+}>;
 
 /**
  * A utility for referencing Convex functions in your app's public API.

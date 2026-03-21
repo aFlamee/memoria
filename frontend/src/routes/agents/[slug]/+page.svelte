@@ -1,56 +1,61 @@
 <script lang="ts">
-	import GraphPanel from '$lib/components/GraphPanel.svelte';
+	import AuditTrailPanel from '$lib/components/AuditTrailPanel.svelte';
 	import PageShell from '$lib/components/PageShell.svelte';
-	import SectionHeading from '$lib/components/SectionHeading.svelte';
+	import SessionList from '$lib/components/SessionList.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
-	import type { AgentDetail } from '$lib/types/agents';
+	import TaskGraph from '$lib/components/TaskGraph.svelte';
+	import TemplateStrip from '$lib/components/TemplateStrip.svelte';
+	import type { InstanceDetail } from '$lib/types/observegraph';
 
-	let { data }: { data: { agent: AgentDetail | null } } = $props();
+	let { data }: { data: { agent: InstanceDetail | null } } = $props();
 </script>
 
 {#if data.agent}
-	<PageShell
-		title={data.agent.name}
-		description={data.agent.pulse}
-	>
+	<PageShell title={data.agent.instance.name} variant="compact">
 		<div class="agent-detail">
 			<section class="agent-detail__masthead">
 				<div class="agent-detail__meta">
-					<h2>{data.agent.role}</h2>
-					<p>{data.agent.tagline}</p>
+					<StatusBadge status={data.agent.instance.status} />
 				</div>
 
 				<div class="agent-detail__facts">
 					<div>
-						<span>State</span>
-						<StatusBadge status={data.agent.status} />
+						<span>Live</span>
+						<strong>{data.agent.instance.metrics.runningTasks}</strong>
 					</div>
 					<div>
-						<span>Location</span>
-						<strong>{data.agent.location}</strong>
+						<span>Today</span>
+						<strong>{data.agent.instance.metrics.completedToday}</strong>
+					</div>
+					<div>
+						<span>7d Spend</span>
+						<strong>{data.agent.instance.totalCostUsd7dLabel}</strong>
+					</div>
+					<div>
+						<span>7d Tokens</span>
+						<strong>{data.agent.instance.totalTokens7dLabel}</strong>
 					</div>
 				</div>
 			</section>
 
-			<SectionHeading
-				title="Static panels for the first operator-facing pass"
-				copy="No canvas engine yet. These panels intentionally freeze the structure so the visual system can settle before behavior starts moving."
-			/>
-
-			<div class="graph-grid">
-				{#each data.agent.panels as panel (panel.key)}
-					<GraphPanel {panel} />
-				{/each}
+			<div class="detail-grid">
+				<SessionList sessions={data.agent.sessions} />
+				<TemplateStrip templates={data.agent.templates} />
 			</div>
+
+			{#if data.agent.primaryGraph}
+				<TaskGraph graph={data.agent.primaryGraph} />
+			{/if}
+
+			{#if data.agent.auditTrail}
+				<AuditTrailPanel audit={data.agent.auditTrail} />
+			{/if}
 		</div>
 	</PageShell>
 {:else}
-	<PageShell
-		title="No agent record loaded"
-		description="The requested slug does not exist in the current UI dataset."
-	>
+	<PageShell title="Not found" description="Pick a valid instance.">
 		<section class="empty-state">
-			<p>Use one of the seeded mock agents from the landing page and return here through its tile.</p>
+			<p>This instance is not in the current dataset.</p>
 			<a class="empty-state__link" href="/">Back to agent index</a>
 		</section>
 	</PageShell>

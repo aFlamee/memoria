@@ -14,3 +14,11 @@ Do not start a new Dev environment, there is always one running!
 Build the code in a solid structured way to keep improving and to easy add new features to the codebase. SO do NOT implement features just for this case to make them work. Implement them in an generic and modular way to make it easy to expand upon that!
 
 Do NOT use `eyebrows` in the UI! 
+Keep the style of the UI as the rest and pls only use the components in the components folder in the ui! 
+
+So the hierachy is just like this:
+1. User
+2. Instance (These are the multiple Agents in the hero page)
+3. Session (These are the multiple sessions in the detailed agent page)
+4. Task (There are many task (knowledge graph) in a session)
+5. Action (An Action is a node in the knowledge graph)
