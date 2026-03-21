@@ -6,6 +6,7 @@
 	"scripts": {
 		"dev": "concurrently -n app,convex,neo4j -c blue,magenta,green \"pnpm dev:app\" \"pnpm dev:convex\" \"pnpm dev:neo4j\"",
 		"dev:app": "vite dev",
+		"dev:app:docker": "vite dev --host 0.0.0.0 --port 5173",
 		"dev:convex": "convex dev",
 		"dev:neo4j": "docker compose up neo4j",
 		"generate:mockdata": "node scripts/generate-observegraph-mockdata.mjs",

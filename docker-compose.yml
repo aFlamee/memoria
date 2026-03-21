@@ -1,0 +1,55 @@
+services:
+  neo4j:
+    image: neo4j:5.18-community
+    hostname: neo4j
+    environment:
+      NEO4J_AUTH: ${NEO4J_AUTH:-neo4j/memoriapassword}
+      NEO4J_PLUGINS: '["apoc"]'
+    ports:
+      - "${NEO4J_HTTP_PORT:-7474}:7474"
+      - "${NEO4J_BOLT_PORT:-7687}:7687"
+    volumes:
+      - neo4j_data:/data
+    healthcheck:
+      test: ["CMD", "neo4j", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./backend/api
+      dockerfile: Dockerfile
+    env_file:
+      - path: ./.env
+        required: false
+    environment:
+      NEO4J_URI: ${DOCKER_NEO4J_URI:-bolt://neo4j:7687}
+      NEO4J_USER: ${NEO4J_USER:-neo4j}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-memoriapassword}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      MEMORIA_USER_ID: ${MEMORIA_USER_ID:-meet}
+      MEMORIA_USER_NAME: ${MEMORIA_USER_NAME:-Meet Kachhadiya}
+    ports:
+      - "8000:8000"
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    env_file:
+      - path: ./.env
+        required: false
+    environment:
+      HOST: 0.0.0.0
+      OBSERVEGRAPH_USE_MOCK_DATA: ${OBSERVEGRAPH_USE_MOCK_DATA:-true}
+    ports:
+      - "5173:5173"
+    command: pnpm dev:app:docker
+
+volumes:
+  neo4j_data:
