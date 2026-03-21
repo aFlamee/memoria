@@ -46,32 +46,33 @@ Unless you are certain, prefer deprecating fields over deleting them. Mark the f
 ```typescript
 // Before
 users: defineTable({
-	name: v.string()
-});
+  name: v.string(),
+})
 
 // After - safe, new field is optional
 users: defineTable({
-	name: v.string(),
-	bio: v.optional(v.string())
-});
+  name: v.string(),
+  bio: v.optional(v.string()),
+})
 ```
 
 ### Adding New Table
 
 ```typescript
 posts: defineTable({
-	userId: v.id('users'),
-	title: v.string()
-}).index('by_user', ['userId']);
+  userId: v.id("users"),
+  title: v.string(),
+}).index("by_user", ["userId"])
 ```
 
 ### Adding Index
 
 ```typescript
 users: defineTable({
-	name: v.string(),
-	email: v.string()
-}).index('by_email', ['email']);
+  name: v.string(),
+  email: v.string(),
+})
+  .index("by_email", ["email"])
 ```
 
 ## Breaking Changes: The Deployment Workflow
@@ -110,8 +111,8 @@ npm install @convex-dev/migrations
 
 ```typescript
 // convex/convex.config.ts
-import { defineApp } from 'convex/server';
-import migrations from '@convex-dev/migrations/convex.config.js';
+import { defineApp } from "convex/server";
+import migrations from "@convex-dev/migrations/convex.config.js";
 
 const app = defineApp();
 app.use(migrations);
@@ -120,9 +121,9 @@ export default app;
 
 ```typescript
 // convex/migrations.ts
-import { Migrations } from '@convex-dev/migrations';
-import { components } from './_generated/api.js';
-import { DataModel } from './_generated/dataModel.js';
+import { Migrations } from "@convex-dev/migrations";
+import { components } from "./_generated/api.js";
+import { DataModel } from "./_generated/dataModel.js";
 
 export const migrations = new Migrations<DataModel>(components.migrations);
 export const run = migrations.runner();
@@ -137,12 +138,12 @@ The `migrateOne` function processes a single document. The component handles bat
 ```typescript
 // convex/migrations.ts
 export const addDefaultRole = migrations.define({
-	table: 'users',
-	migrateOne: async (ctx, user) => {
-		if (user.role === undefined) {
-			await ctx.db.patch(user._id, { role: 'user' });
-		}
-	}
+  table: "users",
+  migrateOne: async (ctx, user) => {
+    if (user.role === undefined) {
+      await ctx.db.patch(user._id, { role: "user" });
+    }
+  },
 });
 ```
 
@@ -150,8 +151,8 @@ Shorthand: if you return an object, it is applied as a patch automatically.
 
 ```typescript
 export const clearDeprecatedField = migrations.define({
-	table: 'users',
-	migrateOne: () => ({ legacyField: undefined })
+  table: "users",
+  migrateOne: () => ({ legacyField: undefined }),
 });
 ```
 
@@ -178,9 +179,9 @@ await migrations.runOne(ctx, internal.migrations.addDefaultRole);
 
 ```typescript
 export const runAll = migrations.runner([
-	internal.migrations.addDefaultRole,
-	internal.migrations.clearDeprecatedField,
-	internal.migrations.normalizeEmails
+  internal.migrations.addDefaultRole,
+  internal.migrations.clearDeprecatedField,
+  internal.migrations.normalizeEmails,
 ]);
 ```
 
@@ -234,11 +235,11 @@ If documents are large or the table has heavy write traffic, reduce the batch si
 
 ```typescript
 export const migrateHeavyTable = migrations.define({
-	table: 'largeDocuments',
-	batchSize: 10,
-	migrateOne: async (ctx, doc) => {
-		// migration logic
-	}
+  table: "largeDocuments",
+  batchSize: 10,
+  migrateOne: async (ctx, doc) => {
+    // migration logic
+  },
 });
 ```
 
@@ -248,9 +249,10 @@ Process only matching documents instead of the full table:
 
 ```typescript
 export const fixEmptyNames = migrations.define({
-	table: 'users',
-	customRange: (query) => query.withIndex('by_name', (q) => q.eq('name', '')),
-	migrateOne: () => ({ name: '<unknown>' })
+  table: "users",
+  customRange: (query) =>
+    query.withIndex("by_name", (q) => q.eq("name", "")),
+  migrateOne: () => ({ name: "<unknown>" }),
 });
 ```
 
@@ -260,9 +262,9 @@ By default each document in a batch is processed serially. Enable parallel proce
 
 ```typescript
 export const clearField = migrations.define({
-	table: 'myTable',
-	parallelize: true,
-	migrateOne: () => ({ optionalField: undefined })
+  table: "myTable",
+  parallelize: true,
+  migrateOne: () => ({ optionalField: undefined }),
 });
 ```
 
@@ -273,25 +275,25 @@ export const clearField = migrations.define({
 ```typescript
 // Deploy 1: Schema allows both states
 users: defineTable({
-	name: v.string(),
-	role: v.optional(v.union(v.literal('user'), v.literal('admin')))
-});
+  name: v.string(),
+  role: v.optional(v.union(v.literal("user"), v.literal("admin"))),
+})
 
 // Migration: backfill the field
 export const addDefaultRole = migrations.define({
-	table: 'users',
-	migrateOne: async (ctx, user) => {
-		if (user.role === undefined) {
-			await ctx.db.patch(user._id, { role: 'user' });
-		}
-	}
+  table: "users",
+  migrateOne: async (ctx, user) => {
+    if (user.role === undefined) {
+      await ctx.db.patch(user._id, { role: "user" });
+    }
+  },
 });
 
 // Deploy 2: After migration completes, make it required
 users: defineTable({
-	name: v.string(),
-	role: v.union(v.literal('user'), v.literal('admin'))
-});
+  name: v.string(),
+  role: v.union(v.literal("user"), v.literal("admin")),
+})
 ```
 
 ### Deleting a Field
@@ -304,12 +306,12 @@ Mark the field optional first, migrate data to remove it, then remove from schem
 
 // Migration
 export const removeIsPro = migrations.define({
-	table: 'teams',
-	migrateOne: async (ctx, team) => {
-		if (team.isPro !== undefined) {
-			await ctx.db.patch(team._id, { isPro: undefined });
-		}
-	}
+  table: "teams",
+  migrateOne: async (ctx, team) => {
+    if (team.isPro !== undefined) {
+      await ctx.db.patch(team._id, { isPro: undefined });
+    }
+  },
 });
 
 // Deploy 2: Remove isPro from schema entirely
@@ -325,15 +327,15 @@ Prefer creating a new field. You can combine adding and deleting in one migratio
 
 // Migration: convert old field to new field
 export const convertToEnum = migrations.define({
-	table: 'teams',
-	migrateOne: async (ctx, team) => {
-		if (team.plan === undefined) {
-			await ctx.db.patch(team._id, {
-				plan: team.isPro ? 'pro' : 'basic',
-				isPro: undefined
-			});
-		}
-	}
+  table: "teams",
+  migrateOne: async (ctx, team) => {
+    if (team.plan === undefined) {
+      await ctx.db.patch(team._id, {
+        plan: team.isPro ? "pro" : "basic",
+        isPro: undefined,
+      });
+    }
+  },
 });
 
 // Deploy 2: Remove isPro from schema, make plan required
@@ -343,24 +345,24 @@ export const convertToEnum = migrations.define({
 
 ```typescript
 export const extractPreferences = migrations.define({
-	table: 'users',
-	migrateOne: async (ctx, user) => {
-		if (user.preferences === undefined) return;
+  table: "users",
+  migrateOne: async (ctx, user) => {
+    if (user.preferences === undefined) return;
 
-		const existing = await ctx.db
-			.query('userPreferences')
-			.withIndex('by_user', (q) => q.eq('userId', user._id))
-			.first();
+    const existing = await ctx.db
+      .query("userPreferences")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .first();
 
-		if (!existing) {
-			await ctx.db.insert('userPreferences', {
-				userId: user._id,
-				...user.preferences
-			});
-		}
+    if (!existing) {
+      await ctx.db.insert("userPreferences", {
+        userId: user._id,
+        ...user.preferences,
+      });
+    }
 
-		await ctx.db.patch(user._id, { preferences: undefined });
-	}
+    await ctx.db.patch(user._id, { preferences: undefined });
+  },
 });
 ```
 
@@ -370,17 +372,17 @@ Make sure your code is already writing to the new `userPreferences` table for ne
 
 ```typescript
 export const deleteOrphanedEmbeddings = migrations.define({
-	table: 'embeddings',
-	migrateOne: async (ctx, doc) => {
-		const chunk = await ctx.db
-			.query('chunks')
-			.withIndex('by_embedding', (q) => q.eq('embeddingId', doc._id))
-			.first();
+  table: "embeddings",
+  migrateOne: async (ctx, doc) => {
+    const chunk = await ctx.db
+      .query("chunks")
+      .withIndex("by_embedding", (q) => q.eq("embeddingId", doc._id))
+      .first();
 
-		if (!chunk) {
-			await ctx.db.delete(doc._id);
-		}
-	}
+    if (!chunk) {
+      await ctx.db.delete(doc._id);
+    }
+  },
 });
 ```
 
@@ -402,26 +404,26 @@ This is preferred because you can safely roll back at any point, the old format 
 ```typescript
 // Bad: only writing to new structure before migration is done
 export const createTeam = mutation({
-	args: { name: v.string(), isPro: v.boolean() },
-	handler: async (ctx, args) => {
-		await ctx.db.insert('teams', {
-			name: args.name,
-			plan: args.isPro ? 'pro' : 'basic'
-		});
-	}
+  args: { name: v.string(), isPro: v.boolean() },
+  handler: async (ctx, args) => {
+    await ctx.db.insert("teams", {
+      name: args.name,
+      plan: args.isPro ? "pro" : "basic",
+    });
+  },
 });
 
 // Good: writing to both structures during migration
 export const createTeam = mutation({
-	args: { name: v.string(), isPro: v.boolean() },
-	handler: async (ctx, args) => {
-		const plan = args.isPro ? 'pro' : 'basic';
-		await ctx.db.insert('teams', {
-			name: args.name,
-			isPro: args.isPro,
-			plan
-		});
-	}
+  args: { name: v.string(), isPro: v.boolean() },
+  handler: async (ctx, args) => {
+    const plan = args.isPro ? "pro" : "basic";
+    await ctx.db.insert("teams", {
+      name: args.name,
+      isPro: args.isPro,
+      plan,
+    });
+  },
 });
 ```
 
@@ -437,9 +439,9 @@ This avoids duplicating writes, which is useful when having two copies of data c
 
 ```typescript
 // Good: reading both formats, preferring new
-function getTeamPlan(team: Doc<'teams'>): 'basic' | 'pro' {
-	if (team.plan !== undefined) return team.plan;
-	return team.isPro ? 'pro' : 'basic';
+function getTeamPlan(team: Doc<"teams">): "basic" | "pro" {
+  if (team.plan !== undefined) return team.plan;
+  return team.isPro ? "pro" : "basic";
 }
 ```
 
@@ -448,17 +450,17 @@ function getTeamPlan(team: Doc<'teams'>): 'basic' | 'pro' {
 For small tables (a few thousand documents at most), you can migrate in a single `internalMutation` without the component:
 
 ```typescript
-import { internalMutation } from './_generated/server';
+import { internalMutation } from "./_generated/server";
 
 export const backfillSmallTable = internalMutation({
-	handler: async (ctx) => {
-		const docs = await ctx.db.query('smallConfig').collect();
-		for (const doc of docs) {
-			if (doc.newField === undefined) {
-				await ctx.db.patch(doc._id, { newField: 'default' });
-			}
-		}
-	}
+  handler: async (ctx) => {
+    const docs = await ctx.db.query("smallConfig").collect();
+    for (const doc of docs) {
+      if (doc.newField === undefined) {
+        await ctx.db.patch(doc._id, { newField: "default" });
+      }
+    }
+  },
 });
 ```
 
@@ -473,20 +475,20 @@ Only use `.collect()` when you are certain the table is small. For anything larg
 Query to check remaining unmigrated documents:
 
 ```typescript
-import { query } from './_generated/server';
+import { query } from "./_generated/server";
 
 export const verifyMigration = query({
-	handler: async (ctx) => {
-		const remaining = await ctx.db
-			.query('users')
-			.filter((q) => q.eq(q.field('role'), undefined))
-			.take(10);
+  handler: async (ctx) => {
+    const remaining = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("role"), undefined))
+      .take(10);
 
-		return {
-			complete: remaining.length === 0,
-			sampleRemaining: remaining.map((u) => u._id)
-		};
-	}
+    return {
+      complete: remaining.length === 0,
+      sampleRemaining: remaining.map((u) => u._id),
+    };
+  },
 });
 ```
 

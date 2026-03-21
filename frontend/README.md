@@ -1,11 +1,11 @@
-# Memoria
+# Memoria Frontend
 
-You will ned node >=22 for svelte
-You will need docker for the neo4j instance too
-You will ned Convex installed too!
+You need Node >= 22 and a reachable Convex deployment.
 
-run `pnpm install` for all dependencies
-run `npx convex dev` and create a project (This will create a .env.local for you)
+```bash
+pnpm install
+npx convex dev
+pnpm run dev
+```
 
-> Convex will ask you if you want AI Files. We dont need it, I already pushed them in this repo!
-> Then you can just run `pnpm run dev`
+The frontend still supports local mock data. Set `OBSERVEGRAPH_USE_MOCK_DATA=false` to use live data paths.

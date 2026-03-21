@@ -4,14 +4,12 @@
 	"version": "0.0.1",
 	"type": "module",
 	"scripts": {
-		"dev": "concurrently -n app,convex,neo4j -c blue,magenta,green \"pnpm dev:app\" \"pnpm dev:convex\" \"pnpm dev:neo4j\"",
+		"dev": "concurrently -n app,convex -c blue,magenta \"pnpm dev:app\" \"pnpm dev:convex\"",
 		"dev:app": "vite dev",
 		"dev:app:docker": "vite dev --host 0.0.0.0 --port 5173",
 		"dev:convex": "convex dev",
-		"dev:neo4j": "docker compose up neo4j",
 		"generate:mockdata": "node scripts/generate-observegraph-mockdata.mjs",
 		"seed:observegraph": "node scripts/seed-observegraph.mjs",
-		"seed:observegraph:local": "node scripts/seed-observegraph.mjs --skip-neo4j",
 		"test:mockdata": "node scripts/test-observegraph-mockdata.mjs",
 		"codegen:convex": "convex codegen",
 		"build": "vite build",
@@ -53,7 +51,6 @@
 		"cytoscape-dagre": "^2.5.0",
 		"dagre": "^0.8.5",
 		"neverthrow": "^8.2.0",
-		"neo4j-driver": "^5.28.2",
 		"runed": "^0.37.1",
 		"zod": "^4.3.6"
 	}

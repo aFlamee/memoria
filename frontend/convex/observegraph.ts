@@ -1,7 +1,122 @@
 import { v } from 'convex/values';
-import { internalQuery, query, type QueryCtx } from './_generated/server';
 
-function formatRelativeTime(isoString: string) {
+import { internal } from './_generated/api';
+import { query, type QueryCtx } from './_generated/server';
+
+type StoreInstance = {
+	instance_id: string;
+	name: string;
+	host: string;
+	port: number;
+	environment: 'development' | 'production' | 'staging';
+	os: string | null;
+	arch: string | null;
+	zeroclaw_version: string | null;
+	model_default: string | null;
+	registered_at: string;
+	last_seen_at: string | null;
+	status: 'online' | 'offline' | 'idle';
+	is_pinned: boolean;
+	tags: string[];
+	session_count: number;
+};
+
+type StoreWeeklyUsage = {
+	instance_id: string;
+	instance_name: string;
+	sessions: number;
+	tasks: number;
+	actions: number;
+	total_tokens: number;
+	total_cost_usd: number;
+};
+
+type StoreSession = {
+	session_id: string;
+	instance_id: string;
+	trigger: string;
+	working_dir: string | null;
+	git_repo: string | null;
+	git_branch: string | null;
+	git_commit: string | null;
+	model_override: string | null;
+	started_at: string;
+	ended_at: string | null;
+	duration_ms: number | null;
+	status: 'running' | 'completed' | 'failed' | 'killed';
+	total_tokens: number;
+	total_cost_usd: number;
+	task_count: number;
+	action_count: number;
+	exit_code: number | null;
+	notes: string | null;
+};
+
+type StoreTask = {
+	task_id: string;
+	session_id: string;
+	instance_id: string;
+	title: string;
+	description: string | null;
+	type: string;
+	technologies: string[];
+	status: 'in_progress' | 'completed' | 'failed';
+	priority: 'low' | 'medium' | 'high';
+	started_at: string;
+	completed_at: string | null;
+	duration_ms: number | null;
+	total_tokens: number;
+	thinking_tokens: number;
+	output_tokens: number;
+	total_cost_usd: number;
+	action_count: number;
+	is_bookmarked: boolean;
+	rating: number | null;
+	tags: string[];
+	error: string | null;
+};
+
+type StoreAction = {
+	action_id: string;
+	task_id: string;
+	instance_id: string;
+	type: string;
+	tool_name: string;
+	command: string | null;
+	file_path: string | null;
+	file_size_bytes: number | null;
+	stdout: string | null;
+	stderr: string | null;
+	exit_code: number | null;
+	permission_level: string;
+	risk_score: number;
+	is_flagged: boolean;
+	flag_reason: string | null;
+	status: string;
+	started_at: string;
+	ended_at: string;
+	duration_ms: number;
+	sequence: number | null;
+	step_name: string | null;
+	reasoning: string | null;
+	thinking_tokens: number;
+	output_tokens: number;
+	total_tokens: number;
+	model_used: string | null;
+	cost_usd: number;
+	retry_count: number;
+	is_recovery: boolean;
+};
+
+type StoreSessionCostBreakdown = {
+	session_id: string;
+	total_cost_usd: number;
+	by_task: Array<{ task_id: string; title: string; cost_usd: number; tokens: number }>;
+	by_tool: Array<{ tool_name: string; action_count: number; cost_usd: number }>;
+};
+
+function formatRelativeTime(isoString: string | null) {
+	if (!isoString) return 'unknown';
 	const deltaMs = Date.now() - new Date(isoString).getTime();
 	const minutes = Math.max(1, Math.floor(deltaMs / 60000));
 	if (minutes < 60) return `${minutes}m ago`;
@@ -24,192 +139,63 @@ function actionTone(action: {
 	sequence: number;
 	status: string;
 	type: string;
-	riskScore: number;
-	isRecovery: boolean;
+	risk_score: number;
+	is_recovery: boolean;
 }) {
 	if (action.sequence === 1) return 'entry' as const;
-	if (action.isRecovery) return 'exit' as const;
-	if (action.status !== 'success' || action.riskScore >= 0.2) return 'risk' as const;
+	if (action.is_recovery) return 'exit' as const;
+	if (action.status !== 'success' || action.risk_score >= 0.2) return 'risk' as const;
 	if (action.type === 'file_write' || action.type === 'shell') return 'write' as const;
 	return 'core' as const;
 }
 
-function mapInstance(instance: {
-	slug: string;
-	name: string;
-	status: 'online' | 'offline' | 'idle';
-	environment: 'development' | 'production' | 'staging';
-	modelDefault: string;
-	host: string;
-	os: string;
-	arch: string;
-	zeroclawVersion: string;
-	lastSeenAt: string;
-	tags: string[];
-	metrics: {
-		sessionCount7d: number;
-		taskCount7d: number;
-		actionCount7d: number;
-		completedToday: number;
-		runningTasks: number;
-		totalTokens7d: number;
-		totalCostUsd7d: number;
-	};
-}) {
-	return {
-		slug: instance.slug,
-		name: instance.name,
-		status: instance.status,
-		environment: instance.environment,
-		modelDefault: instance.modelDefault,
-		host: instance.host,
-		os: instance.os,
-		arch: instance.arch,
-		zeroclawVersion: instance.zeroclawVersion,
-		lastSeenAt: instance.lastSeenAt,
-		lastSeenLabel: formatRelativeTime(instance.lastSeenAt),
-		totalTokens7dLabel: compactTokens(instance.metrics.totalTokens7d),
-		totalCostUsd7dLabel: currency(instance.metrics.totalCostUsd7d),
-		metrics: instance.metrics,
-		tags: instance.tags
-	};
-}
-
-async function getTaskTitlePreview(ctx: QueryCtx, sessionId: string) {
-	const tasks = await ctx.db
-		.query('tasks')
-		.withIndex('by_sessionId_and_startedAt', (q) => q.eq('sessionId', sessionId))
-		.order('asc')
-		.take(3);
-
-	return tasks.map((task) => task.title);
-}
-
-async function mapSessionSummary(
-	ctx: QueryCtx,
-	session: {
-		sessionId: string;
-		trigger: string;
-		status: 'running' | 'completed' | 'failed' | 'killed';
-		startedAt: string;
-		durationMs: number;
-		totalTokens: number;
-		totalCostUsd: number;
-		taskCount: number;
-		actionCount: number;
-		gitBranch: string;
-		notes: string;
+async function getSessionTaskTitles(ctx: QueryCtx, sessionId: string): Promise<string[]> {
+	const breakdown: StoreSessionCostBreakdown | null = await ctx.runQuery(
+		internal.observegraphStore.getSessionCostBreakdown,
+		{ sessionId }
+	);
+	if (!breakdown) {
+		return [];
 	}
-) {
-	return {
-		sessionId: session.sessionId,
-		trigger: session.trigger,
-		status: session.status,
-		startedAt: session.startedAt,
-		durationMs: session.durationMs,
-		totalTokens: session.totalTokens,
-		totalTokensLabel: compactTokens(session.totalTokens),
-		totalCostUsd: session.totalCostUsd,
-		totalCostUsdLabel: currency(session.totalCostUsd),
-		taskCount: session.taskCount,
-		actionCount: session.actionCount,
-		gitBranch: session.gitBranch,
-		notes: session.notes ?? null,
-		taskTitles: await getTaskTitlePreview(ctx, session.sessionId)
-	};
-}
-
-async function getSessionTasks(ctx: QueryCtx, sessionId: string) {
-	const sessionTasks = await ctx.db
-		.query('tasks')
-		.withIndex('by_sessionId_and_startedAt', (q) => q.eq('sessionId', sessionId))
-		.order('asc')
-		.take(12);
-
-	const tasks = [];
-	for (const task of sessionTasks) {
-		const actions = await ctx.db
-			.query('actions')
-			.withIndex('by_taskId_and_sequence', (q) => q.eq('taskId', task.taskId))
-			.order('asc')
-			.take(48);
-
-		const nodes = actions.map((action) => ({
-			id: action.actionId,
-			actionId: action.actionId,
-			label: action.stepName,
-			toolName: action.toolName,
-			type: action.type,
-			status: action.status,
-			durationMs: action.durationMs,
-			totalTokens: action.totalTokens,
-			riskScore: action.riskScore,
-			permissionLevel: action.permissionLevel,
-			tone: actionTone(action)
-		}));
-
-		const edges = actions.slice(0, -1).map((action, index) => {
-			const nextAction = actions[index + 1];
-			return {
-				id: `${action.actionId}__${nextAction.actionId}`,
-				source: action.actionId,
-				target: nextAction.actionId,
-				label: `${action.stepName} -> ${nextAction.stepName}`,
-				sourceLabel: action.stepName,
-				targetLabel: nextAction.stepName,
-				traversalCount: 1,
-				successRate: action.status === 'success' && nextAction.status === 'success' ? 1 : 0,
-				totalTokens: action.totalTokens + nextAction.totalTokens,
-				avgLatencyMs: Math.round((action.durationMs + nextAction.durationMs) / 2)
-			};
-		});
-
-		tasks.push({
-			taskId: task.taskId,
-			title: task.title,
-			status: task.status,
-			durationMs: task.durationMs,
-			totalTokens: task.totalTokens,
-			totalTokensLabel: compactTokens(task.totalTokens),
-			totalCostUsd: task.totalCostUsd,
-			totalCostUsdLabel: currency(task.totalCostUsd),
-			actionCount: task.actionCount,
-			nodes,
-			edges
-		});
-	}
-
-	return tasks;
+	return breakdown.by_task.slice(0, 3).map((task: { title: string }) => task.title);
 }
 
 export const dashboard = query({
 	args: {},
-	handler: async (ctx) => {
-		const instances = await ctx.db.query('instances').order('asc').take(16);
-		const ordered = [...instances].sort((left, right) => {
-			if (left.isPinned !== right.isPinned) return left.isPinned ? -1 : 1;
-			return new Date(right.lastSeenAt).getTime() - new Date(left.lastSeenAt).getTime();
-		});
+	handler: async (ctx): Promise<{
+		generatedAt: string;
+		instances: Array<Record<string, unknown>>;
+	}> => {
+		const instances: StoreInstance[] = await ctx.runQuery(internal.observegraphStore.listInstances, {});
+		const withUsage: Array<{ instance: StoreInstance; usage: StoreWeeklyUsage | null }> = await Promise.all(
+			instances.map(async (instance: StoreInstance) => {
+				const usage: StoreWeeklyUsage | null = await ctx.runQuery(internal.observegraphStore.getWeeklyUsage, {
+					instanceId: instance.instance_id
+				});
+				return { instance, usage };
+			})
+		);
+
 		return {
 			generatedAt: new Date().toISOString(),
-			instances: ordered.map((instance) => ({
-				slug: instance.slug,
+			instances: withUsage.map(({ instance, usage }: { instance: StoreInstance; usage: StoreWeeklyUsage | null }) => ({
+				slug: instance.instance_id,
 				name: instance.name,
 				status: instance.status,
 				environment: instance.environment,
-				modelDefault: instance.modelDefault,
+				modelDefault: instance.model_default ?? 'unknown',
 				host: instance.host,
-				lastSeenAt: instance.lastSeenAt,
-				lastSeenLabel: formatRelativeTime(instance.lastSeenAt),
-				runningTasks: instance.metrics.runningTasks,
-				completedToday: instance.metrics.completedToday,
-				sessionCount7d: instance.metrics.sessionCount7d,
-				taskCount7d: instance.metrics.taskCount7d,
-				actionCount7d: instance.metrics.actionCount7d,
-				totalTokens7d: instance.metrics.totalTokens7d,
-				totalTokens7dLabel: compactTokens(instance.metrics.totalTokens7d),
-				totalCostUsd7d: instance.metrics.totalCostUsd7d,
-				totalCostUsd7dLabel: currency(instance.metrics.totalCostUsd7d),
+				lastSeenAt: instance.last_seen_at ?? instance.registered_at,
+				lastSeenLabel: formatRelativeTime(instance.last_seen_at ?? instance.registered_at),
+				runningTasks: 0,
+				completedToday: 0,
+				sessionCount7d: usage?.sessions ?? 0,
+				taskCount7d: usage?.tasks ?? 0,
+				actionCount7d: usage?.actions ?? 0,
+				totalTokens7d: usage?.total_tokens ?? 0,
+				totalTokens7dLabel: compactTokens(usage?.total_tokens ?? 0),
+				totalCostUsd7d: usage?.total_cost_usd ?? 0,
+				totalCostUsd7dLabel: currency(usage?.total_cost_usd ?? 0),
 				tags: instance.tags
 			}))
 		};
@@ -218,69 +204,171 @@ export const dashboard = query({
 
 export const instanceOverview = query({
 	args: { slug: v.string() },
-	handler: async (ctx, args) => {
-		const instance = await ctx.db
-			.query('instances')
-			.withIndex('by_slug', (q) => q.eq('slug', args.slug))
-			.unique();
+	handler: async (ctx, args): Promise<Record<string, unknown> | null> => {
+		const instance: StoreInstance | null = await ctx.runQuery(internal.observegraphStore.getInstance, {
+			instanceId: args.slug
+		});
 		if (!instance) {
 			return null;
 		}
 
-		const sessions = await ctx.db
-			.query('sessions')
-			.withIndex('by_instanceId_and_startedAt', (q) => q.eq('instanceId', instance.instanceId))
-			.order('desc')
-			.take(8);
-
 		return {
-			instance: mapInstance(instance),
-			sessions: await Promise.all(sessions.map((session) => mapSessionSummary(ctx, session)))
+			instance: {
+				slug: instance.instance_id,
+				name: instance.name,
+				status: instance.status,
+				environment: instance.environment,
+				modelDefault: instance.model_default ?? 'unknown',
+				host: instance.host,
+				os: instance.os ?? 'unknown',
+				arch: instance.arch ?? 'unknown',
+				zeroclawVersion: instance.zeroclaw_version ?? 'unknown',
+				lastSeenAt: instance.last_seen_at ?? instance.registered_at,
+				lastSeenLabel: formatRelativeTime(instance.last_seen_at ?? instance.registered_at),
+				totalTokens7dLabel: '0',
+				totalCostUsd7dLabel: '$0.00',
+				metrics: {
+					sessionCount7d: 0,
+					taskCount7d: 0,
+					actionCount7d: 0,
+					completedToday: 0,
+					runningTasks: 0,
+					totalTokens7d: 0,
+					totalCostUsd7d: 0
+				},
+				tags: instance.tags
+			},
+			sessions: []
 		};
 	}
 });
 
 export const sessionDetail = query({
 	args: { slug: v.string(), sessionId: v.string() },
-	handler: async (ctx, args) => {
-		const instance = await ctx.db
-			.query('instances')
-			.withIndex('by_slug', (q) => q.eq('slug', args.slug))
-			.unique();
-		if (!instance) {
+	handler: async (ctx, args): Promise<Record<string, unknown> | null> => {
+		const instance: StoreInstance | null = await ctx.runQuery(internal.observegraphStore.getInstance, {
+			instanceId: args.slug
+		});
+		const session: StoreSession | null = await ctx.runQuery(internal.observegraphStore.getSession, {
+			sessionId: args.sessionId
+		});
+		if (!instance || !session || session.instance_id !== args.slug) {
 			return null;
 		}
 
-		const session = await ctx.db
-			.query('sessions')
-			.withIndex('by_sessionId', (q) => q.eq('sessionId', args.sessionId))
-			.unique();
-		if (!session || session.instanceId !== instance.instanceId) {
-			return null;
-		}
+		const breakdown: StoreSessionCostBreakdown | null = await ctx.runQuery(
+			internal.observegraphStore.getSessionCostBreakdown,
+			{
+			sessionId: args.sessionId
+			}
+		);
+		const tasks: Array<Record<string, unknown> | null> = await Promise.all(
+			(breakdown?.by_task ?? []).map(async (taskSummary: { task_id: string }) => {
+				const task: StoreTask | null = await ctx.runQuery(internal.observegraphStore.getTask, {
+					taskId: taskSummary.task_id
+				});
+				const actions: StoreAction[] | null = await ctx.runQuery(internal.observegraphStore.getTaskActions, {
+					taskId: taskSummary.task_id
+				});
+				if (!task || !actions) {
+					return null;
+				}
 
-		const tasks = await getSessionTasks(ctx, session.sessionId);
+				const nodes = actions.map((action: StoreAction) => ({
+					id: action.action_id,
+					actionId: action.action_id,
+					label: action.step_name ?? action.action_id,
+					toolName: action.tool_name,
+					type: action.type,
+					status: action.status,
+					durationMs: action.duration_ms,
+					totalTokens: action.total_tokens,
+					riskScore: action.risk_score,
+					permissionLevel: action.permission_level,
+					tone: actionTone({
+						sequence: action.sequence ?? 0,
+						status: action.status,
+						type: action.type,
+						risk_score: action.risk_score,
+						is_recovery: action.is_recovery
+					})
+				}));
+
+				const edges = actions.slice(0, -1).map((action: StoreAction, index: number) => {
+					const nextAction = actions[index + 1];
+					return {
+						id: `${action.action_id}__${nextAction.action_id}`,
+						source: action.action_id,
+						target: nextAction.action_id,
+						label: `${action.step_name ?? action.action_id} -> ${nextAction.step_name ?? nextAction.action_id}`,
+						sourceLabel: action.step_name ?? action.action_id,
+						targetLabel: nextAction.step_name ?? nextAction.action_id,
+						traversalCount: 1,
+						successRate: action.status === 'success' && nextAction.status === 'success' ? 1 : 0,
+						totalTokens: action.total_tokens + nextAction.total_tokens,
+						avgLatencyMs: Math.round((action.duration_ms + nextAction.duration_ms) / 2)
+					};
+				});
+
+				return {
+					taskId: task.task_id,
+					title: task.title,
+					status: task.status,
+					durationMs: task.duration_ms ?? 0,
+					totalTokens: task.total_tokens,
+					totalTokensLabel: compactTokens(task.total_tokens),
+					totalCostUsd: task.total_cost_usd,
+					totalCostUsdLabel: currency(task.total_cost_usd),
+					actionCount: task.action_count,
+					nodes,
+					edges
+				};
+			})
+		);
 
 		return {
-			instance: mapInstance(instance),
+			instance: {
+				slug: instance.instance_id,
+				name: instance.name,
+				status: instance.status,
+				environment: instance.environment,
+				modelDefault: instance.model_default ?? 'unknown',
+				host: instance.host,
+				os: instance.os ?? 'unknown',
+				arch: instance.arch ?? 'unknown',
+				zeroclawVersion: instance.zeroclaw_version ?? 'unknown',
+				lastSeenAt: instance.last_seen_at ?? instance.registered_at,
+				lastSeenLabel: formatRelativeTime(instance.last_seen_at ?? instance.registered_at),
+				totalTokens7dLabel: '0',
+				totalCostUsd7dLabel: '$0.00',
+				metrics: {
+					sessionCount7d: 0,
+					taskCount7d: 0,
+					actionCount7d: 0,
+					completedToday: 0,
+					runningTasks: 0,
+					totalTokens7d: 0,
+					totalCostUsd7d: 0
+				},
+				tags: instance.tags
+			},
 			session: {
-				...(await mapSessionSummary(ctx, session)),
-				tasks
+				sessionId: session.session_id,
+				trigger: session.trigger,
+				status: session.status,
+				startedAt: session.started_at,
+				durationMs: session.duration_ms ?? 0,
+				totalTokens: session.total_tokens,
+				totalTokensLabel: compactTokens(session.total_tokens),
+				totalCostUsd: session.total_cost_usd,
+				totalCostUsdLabel: currency(session.total_cost_usd),
+				taskCount: session.task_count,
+				actionCount: session.action_count,
+				gitBranch: session.git_branch ?? '',
+				notes: session.notes,
+				taskTitles: await getSessionTaskTitles(ctx, args.sessionId),
+				tasks: tasks.filter((task: Record<string, unknown> | null): task is Record<string, unknown> => task !== null)
 			}
 		};
-	}
-});
-
-export const neo4jProjection = internalQuery({
-	args: {},
-	handler: async (ctx) => {
-		const instances = await ctx.db.query('instances').take(16);
-		const sessions = await ctx.db.query('sessions').take(64);
-		const tasks = await ctx.db.query('tasks').take(128);
-		const actions = await ctx.db.query('actions').take(512);
-		const taskTemplates = await ctx.db.query('taskTemplates').take(32);
-		const stepNodes = await ctx.db.query('stepNodes').take(128);
-		const stepEdges = await ctx.db.query('stepEdges').take(128);
-		return { instances, sessions, tasks, actions, taskTemplates, stepNodes, stepEdges };
 	}
 });

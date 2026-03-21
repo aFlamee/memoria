@@ -1,5 +1,5 @@
 import { env } from '$env/dynamic/private';
-import { PUBLIC_CONVEX_URL } from '$env/static/public';
+import { env as publicEnv } from '$env/dynamic/public';
 import { ConvexHttpClient } from 'convex/browser';
 
 import { api } from '../../../convex/_generated/api.js';
@@ -14,10 +14,10 @@ function getConvexClient() {
 	if (env.OBSERVEGRAPH_USE_MOCK_DATA === 'true') {
 		return null;
 	}
-	if (!PUBLIC_CONVEX_URL) {
+	if (!publicEnv.PUBLIC_CONVEX_URL) {
 		return null;
 	}
-	return new ConvexHttpClient(PUBLIC_CONVEX_URL);
+	return new ConvexHttpClient(publicEnv.PUBLIC_CONVEX_URL);
 }
 
 export async function getDashboardData(): Promise<DashboardData> {
@@ -27,7 +27,7 @@ export async function getDashboardData(): Promise<DashboardData> {
 	}
 
 	try {
-		return await client.query(api.observegraph.dashboard, {});
+		return (await client.query(api.observegraph.dashboard, {})) as DashboardData;
 	} catch (error) {
 		console.warn('Falling back to local mock dashboard data because Convex is unavailable.', error);
 		return getMockDashboardData();

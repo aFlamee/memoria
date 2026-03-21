@@ -12,7 +12,10 @@ import {
 } from './observegraphValidators';
 
 const TABLES = [
+	'analyticsHourly',
 	'actions',
+	'instanceWeeklyUsage',
+	'sessionCostBreakdowns',
 	'stepEdges',
 	'stepNodes',
 	'tasks',
@@ -20,22 +23,6 @@ const TABLES = [
 	'taskTemplates',
 	'instances'
 ] as const;
-
-type ImportProjection =
-	| { status: 'skipped'; reason: string }
-	| { status: 'delegated'; reason: string }
-	| {
-			status: 'projected';
-			counts: {
-				instances: number;
-				sessions: number;
-				tasks: number;
-				actions: number;
-				taskTemplates: number;
-				stepNodes: number;
-				stepEdges: number;
-			};
-	  };
 
 async function clearTable(ctx: MutationCtx, tableName: (typeof TABLES)[number]) {
 	for await (const row of ctx.db.query(tableName)) {
@@ -140,7 +127,6 @@ export const importMockData = action({
 			stepNodes: number;
 			stepEdges: number;
 		};
-		projection: ImportProjection;
 	}> => {
 		await ctx.runMutation(internal.observegraphSeed.resetAll, {});
 		await ctx.runMutation(internal.observegraphSeed.insertInstances, { items: args.instances });
@@ -163,10 +149,6 @@ export const importMockData = action({
 				taskTemplates: args.taskTemplates.length,
 				stepNodes: args.stepNodes.length,
 				stepEdges: args.stepEdges.length
-			},
-			projection: {
-				status: 'delegated',
-				reason: 'Use the local seed script to project Convex data into local Neo4j.'
 			}
 		};
 	}

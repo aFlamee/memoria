@@ -1,17 +1,17 @@
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.database import init_driver, close_driver, ensure_schema
-from app.routers import instances, sessions, tasks, actions, templates, analytics
+from app.convex_client import close_client, init_client
+from app.routers import analytics, actions, instances, sessions, tasks, templates
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await init_driver()
-    await ensure_schema()
+    await init_client()
     yield
-    await close_driver()
+    await close_client()
 
 
 app = FastAPI(

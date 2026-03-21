@@ -1,5 +1,8 @@
 import { v } from 'convex/values';
 
+const nullableString = v.union(v.string(), v.null());
+const nullableNumber = v.union(v.number(), v.null());
+
 export const instanceStatusValidator = v.union(
 	v.literal('online'),
 	v.literal('offline'),
@@ -82,15 +85,16 @@ export const instanceValidator = v.object({
 	host: v.string(),
 	port: v.number(),
 	environment: environmentValidator,
-	os: v.string(),
-	arch: v.string(),
-	zeroclawVersion: v.string(),
-	modelDefault: v.string(),
+	os: nullableString,
+	arch: nullableString,
+	zeroclawVersion: nullableString,
+	modelDefault: nullableString,
 	registeredAt: v.string(),
-	lastSeenAt: v.string(),
+	lastSeenAt: nullableString,
 	status: instanceStatusValidator,
 	isPinned: v.boolean(),
 	tags: v.array(v.string()),
+	sessionCount: v.number(),
 	metrics: metricsValidator
 });
 
@@ -98,21 +102,21 @@ export const sessionValidator = v.object({
 	sessionId: v.string(),
 	instanceId: v.string(),
 	trigger: v.string(),
-	workingDir: v.string(),
-	gitRepo: v.string(),
-	gitBranch: v.string(),
-	gitCommit: v.string(),
-	modelOverride: v.union(v.string(), v.null()),
+	workingDir: nullableString,
+	gitRepo: nullableString,
+	gitBranch: nullableString,
+	gitCommit: nullableString,
+	modelOverride: nullableString,
 	startedAt: v.string(),
-	endedAt: v.string(),
-	durationMs: v.number(),
+	endedAt: nullableString,
+	durationMs: nullableNumber,
 	status: sessionStatusValidator,
 	totalTokens: v.number(),
 	totalCostUsd: v.number(),
 	taskCount: v.number(),
 	actionCount: v.number(),
-	exitCode: v.union(v.number(), v.null()),
-	notes: v.string()
+	exitCode: nullableNumber,
+	notes: nullableString
 });
 
 export const taskValidator = v.object({
@@ -122,23 +126,24 @@ export const taskValidator = v.object({
 	templateId: v.string(),
 	runId: v.string(),
 	title: v.string(),
-	description: v.string(),
+	description: nullableString,
 	type: taskTypeValidator,
 	technologies: v.array(v.string()),
 	status: taskStatusValidator,
 	priority: taskPriorityValidator,
 	startedAt: v.string(),
-	completedAt: v.string(),
-	durationMs: v.number(),
+	completedAt: nullableString,
+	durationMs: nullableNumber,
 	totalTokens: v.number(),
 	thinkingTokens: v.number(),
 	outputTokens: v.number(),
 	totalCostUsd: v.number(),
 	actionCount: v.number(),
 	isBookmarked: v.boolean(),
-	rating: v.union(v.number(), v.null()),
+	rating: nullableNumber,
 	tags: v.array(v.string()),
-	error: v.union(v.string(), v.null())
+	error: nullableString,
+	lastActionAt: v.string()
 });
 
 export const actionValidator = v.object({
@@ -151,24 +156,26 @@ export const actionValidator = v.object({
 	stepName: v.string(),
 	type: actionTypeValidator,
 	toolName: v.string(),
-	command: v.union(v.string(), v.null()),
-	filePath: v.union(v.string(), v.null()),
-	stdout: v.string(),
-	stderr: v.union(v.string(), v.null()),
-	exitCode: v.union(v.number(), v.null()),
+	command: nullableString,
+	filePath: nullableString,
+	fileSizeBytes: nullableNumber,
+	stdout: nullableString,
+	stderr: nullableString,
+	exitCode: nullableNumber,
 	permissionLevel: permissionLevelValidator,
 	riskScore: v.number(),
 	isFlagged: v.boolean(),
+	flagReason: nullableString,
 	status: actionStatusValidator,
 	startedAt: v.string(),
 	endedAt: v.string(),
 	durationMs: v.number(),
-	reasoning: v.string(),
+	reasoning: nullableString,
 	thinkingTokens: v.number(),
 	outputTokens: v.number(),
 	totalTokens: v.number(),
-	modelUsed: v.string(),
-	latencyMs: v.number(),
+	modelUsed: nullableString,
+	latencyMs: nullableNumber,
 	costUsd: v.number(),
 	retryCount: v.number(),
 	isRecovery: v.boolean()
@@ -185,7 +192,7 @@ export const taskTemplateValidator = v.object({
 	successRate: v.number(),
 	avgTokens: v.number(),
 	avgDurationMs: v.number(),
-	bestRunId: v.string(),
+	bestRunId: nullableString,
 	tags: v.array(v.string())
 });
 
@@ -215,6 +222,66 @@ export const stepEdgeValidator = v.object({
 	avgTokens: v.number(),
 	avgLatencyMs: v.number(),
 	successRate: v.number()
+});
+
+export const costByTaskValidator = v.object({
+	taskId: v.string(),
+	title: v.string(),
+	costUsd: v.number(),
+	tokens: v.number()
+});
+
+export const costByToolValidator = v.object({
+	toolName: v.string(),
+	actionCount: v.number(),
+	costUsd: v.number()
+});
+
+export const sessionCostBreakdownValidator = v.object({
+	sessionId: v.string(),
+	totalCostUsd: v.number(),
+	byTask: v.array(costByTaskValidator),
+	byTool: v.array(costByToolValidator),
+	updatedAt: v.string()
+});
+
+export const instanceWeeklyUsageValidator = v.object({
+	instanceId: v.string(),
+	instanceName: v.string(),
+	sessions: v.number(),
+	tasks: v.number(),
+	actions: v.number(),
+	totalTokens: v.number(),
+	totalCostUsd: v.number(),
+	updatedAt: v.string()
+});
+
+export const analyticsByInstanceEntryValidator = v.object({
+	instanceId: v.string(),
+	instanceName: v.string(),
+	costUsd: v.number()
+});
+
+export const analyticsByTaskTypeEntryValidator = v.object({
+	type: v.string(),
+	costUsd: v.number()
+});
+
+export const analyticsByToolEntryValidator = v.object({
+	toolName: v.string(),
+	actionCount: v.number(),
+	costUsd: v.number()
+});
+
+export const analyticsHourlyValidator = v.object({
+	hourBucket: v.string(),
+	totalCostUsd: v.number(),
+	totalTokens: v.number(),
+	actionCount: v.number(),
+	byInstance: v.array(analyticsByInstanceEntryValidator),
+	byTaskType: v.array(analyticsByTaskTypeEntryValidator),
+	byTool: v.array(analyticsByToolEntryValidator),
+	updatedAt: v.string()
 });
 
 export const seedPayloadValidator = v.object({
