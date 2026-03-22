@@ -16,12 +16,16 @@
 	class="session-card"
 	href={resolve(`/agents/${agentSlug}/sessions/${session.sessionId}`)}
 	data-sveltekit-preload-data="eager"
-	aria-label={`Open session ${session.sessionId}`}
+	aria-label={`Open session ${session.displayName} (${session.sessionId})`}
+	title={session.sessionId}
 >
 	<div class="session-card__top-row">
 		<div class="session-card__heading">
-			<h2>{session.sessionId}</h2>
-			<p>{session.gitBranch}</p>
+			<span class="session-card__eyebrow">Run {session.sessionShortId}</span>
+			<h2>{session.displayName}</h2>
+			{#if session.displaySubtitle}
+				<p>{session.displaySubtitle}</p>
+			{/if}
 		</div>
 		<span class={`session-card__status session-card__status--${session.status}`}
 			>{session.status}</span
@@ -35,17 +39,13 @@
 		<span>{session.actionCount} actions</span>
 	</div>
 
-	{#if session.taskTitles.length > 0}
+	{#if session.taskPreview.length > 0}
 		<div class="session-card__section">
-			<div class="session-card__task-list">
-				{#each session.taskTitles as title, index (`${session.sessionId}-${index}-${title}`)}
-					<span>{title}</span>
+			<div class="session-card__preview-list">
+				{#each session.taskPreview as title, index (`${session.sessionId}-${index}-${title}`)}
+					<p>{title}</p>
 				{/each}
 			</div>
 		</div>
-	{/if}
-
-	{#if session.notes}
-		<p class="session-card__notes">{session.notes}</p>
 	{/if}
 </a>

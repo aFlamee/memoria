@@ -47,6 +47,7 @@ type SessionRecord = {
 	taskCount: number;
 	actionCount: number;
 	gitBranch: string;
+	notes: string | null;
 };
 
 type TaskRecord = {
@@ -64,6 +65,7 @@ type TaskRecord = {
 type ActionRecord = {
 	actionId: string;
 	taskId: string;
+	instanceId: string;
 	runId: string;
 	stepId: string;
 	sequence: number;
@@ -80,6 +82,7 @@ type ActionRecord = {
 	filePath: string | null;
 	stdout: string;
 	stderr: string | null;
+	startedAt: string;
 	totalTokens: number;
 	costUsd: number;
 	isRecovery: boolean;
@@ -152,21 +155,80 @@ function compactTokens(value: number) {
 	return `${value}`;
 }
 
+function normalizeWhitespace(value: string) {
+	return value.replace(/\s+/g, ' ').trim();
+}
+
+function truncateText(value: string, maxLength: number) {
+	const normalized = normalizeWhitespace(value);
+	if (normalized.length <= maxLength) {
+		return normalized;
+	}
+
+	return `${normalized.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`;
+}
+
+function sessionShortId(sessionId: string) {
+	return sessionId.length <= 8 ? sessionId.toUpperCase() : sessionId.slice(0, 8).toUpperCase();
+}
+
+function formatTriggerLabel(trigger: string) {
+	return normalizeWhitespace(trigger).toUpperCase();
+}
+
+function hourBucket(isoString: string) {
+	const date = new Date(isoString);
+	date.setUTCMinutes(0, 0, 0);
+	return date.toISOString();
+}
+
+function buildRecentHourBuckets(hours: number) {
+	const now = new Date();
+	now.setUTCMinutes(0, 0, 0);
+	now.setUTCHours(now.getUTCHours() - Math.max(0, hours - 1));
+
+	return Array.from({ length: hours }, (_, index) => {
+		const bucket = new Date(now);
+		bucket.setUTCHours(now.getUTCHours() + index);
+		return bucket.toISOString();
+	});
+}
+
+function buildInstanceSparkline(instanceId: string, actions: ActionRecord[]) {
+	const hourBuckets = buildRecentHourBuckets(7 * 24);
+	const totals = new Map<string, number>();
+
+	for (const action of actions) {
+		if (action.instanceId !== instanceId) {
+			continue;
+		}
+
+		const bucket = hourBucket(action.startedAt);
+		totals.set(bucket, Number(((totals.get(bucket) ?? 0) + action.costUsd).toFixed(6)));
+	}
+
+	return hourBuckets.map((hour) => ({
+		hour,
+		costUsd: totals.get(hour) ?? 0
+	}));
+}
+
 async function readJsonFile<T>(filename: string): Promise<T> {
 	const source = await readFile(path.join(mockdataDir, filename), 'utf8');
 	return JSON.parse(source) as T;
 }
 
 async function loadMockDataset(): Promise<MockDataset> {
-	const [instances, sessions, tasks, actions, taskTemplates, stepNodes, stepEdges] = await Promise.all([
-		readJsonFile<InstanceRecord[]>('instances.json'),
-		readJsonFile<SessionRecord[]>('sessions.json'),
-		readJsonFile<TaskRecord[]>('tasks.json'),
-		readJsonFile<ActionRecord[]>('actions.json'),
-		readJsonFile<TemplateRecord[]>('taskTemplates.json'),
-		readJsonFile<StepNodeRecord[]>('stepNodes.json'),
-		readJsonFile<StepEdgeRecord[]>('stepEdges.json')
-	]);
+	const [instances, sessions, tasks, actions, taskTemplates, stepNodes, stepEdges] =
+		await Promise.all([
+			readJsonFile<InstanceRecord[]>('instances.json'),
+			readJsonFile<SessionRecord[]>('sessions.json'),
+			readJsonFile<TaskRecord[]>('tasks.json'),
+			readJsonFile<ActionRecord[]>('actions.json'),
+			readJsonFile<TemplateRecord[]>('taskTemplates.json'),
+			readJsonFile<StepNodeRecord[]>('stepNodes.json'),
+			readJsonFile<StepEdgeRecord[]>('stepEdges.json')
+		]);
 
 	return { instances, sessions, tasks, actions, taskTemplates, stepNodes, stepEdges };
 }
@@ -192,9 +254,68 @@ function mapInstanceProfile(instance: InstanceRecord) {
 	};
 }
 
+function buildSessionDisplayName(taskTitles: string[], notes: string | null, sessionId: string) {
+	const primaryTask = taskTitles
+		.map((title) => normalizeWhitespace(title))
+		.find((title) => title.length > 0);
+	if (primaryTask) {
+		return truncateText(primaryTask, 72);
+	}
+
+	const note = normalizeWhitespace(notes ?? '');
+	if (note.length > 0) {
+		return truncateText(note, 72);
+	}
+
+	return `Session ${sessionShortId(sessionId)}`;
+}
+
+function buildSessionSubtitle(session: SessionRecord) {
+	const parts = [
+		formatTriggerLabel(session.trigger),
+		formatRelativeTime(session.startedAt),
+		normalizeWhitespace(session.gitBranch)
+	].filter((value) => value.length > 0);
+
+	return parts.length > 0 ? parts.join(' · ') : null;
+}
+
+function buildTaskPreview(taskTitles: string[], displayName: string) {
+	const displayKey = normalizeWhitespace(displayName).toLowerCase();
+	const seen = new Set<string>();
+	const preview: string[] = [];
+
+	for (const title of taskTitles) {
+		const normalized = normalizeWhitespace(title);
+		if (!normalized) {
+			continue;
+		}
+
+		const key = normalized.toLowerCase();
+		if (key === displayKey || seen.has(key)) {
+			continue;
+		}
+
+		seen.add(key);
+		preview.push(truncateText(normalized, 56));
+
+		if (preview.length === 2) {
+			break;
+		}
+	}
+
+	return preview;
+}
+
 function mapSessionSummary(session: SessionRecord, sessionTasks: TaskRecord[]) {
+	const taskTitles = sessionTasks.slice(0, 3).map((task) => task.title);
+	const displayName = buildSessionDisplayName(taskTitles, session.notes, session.sessionId);
+
 	return {
 		sessionId: session.sessionId,
+		sessionShortId: sessionShortId(session.sessionId),
+		displayName,
+		displaySubtitle: buildSessionSubtitle(session),
 		trigger: session.trigger,
 		status: session.status,
 		startedAt: session.startedAt,
@@ -206,8 +327,9 @@ function mapSessionSummary(session: SessionRecord, sessionTasks: TaskRecord[]) {
 		taskCount: session.taskCount,
 		actionCount: session.actionCount,
 		gitBranch: session.gitBranch,
-		notes: null,
-		taskTitles: sessionTasks.slice(0, 3).map((task) => task.title)
+		notes: session.notes,
+		taskTitles,
+		taskPreview: buildTaskPreview(taskTitles, displayName)
 	};
 }
 
@@ -247,6 +369,7 @@ export async function getMockDashboardData(): Promise<DashboardData> {
 			totalTokens7dLabel: compactTokens(instance.metrics.totalTokens7d),
 			totalCostUsd7d: instance.metrics.totalCostUsd7d,
 			totalCostUsd7dLabel: currency(instance.metrics.totalCostUsd7d),
+			sparkline: buildInstanceSparkline(instance.instanceId, dataset.actions),
 			tags: instance.tags
 		}))
 	};
@@ -352,6 +475,6 @@ export async function getMockSessionDetail(
 		session: {
 			...mapSessionSummary(session, sessionTasks),
 			tasks
-		},
+		}
 	};
 }

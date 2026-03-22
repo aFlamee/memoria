@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import InstanceSparkline from '$lib/components/InstanceSparkline.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import type { InstanceSummary } from '$lib/types/observegraph';
 
@@ -38,6 +39,8 @@
 			<strong>{instance.modelDefault}</strong>
 		</div>
 	</div>
+
+	<InstanceSparkline points={instance.sparkline} />
 
 	<div class="instance-tile__footer">
 		<span>{instance.lastSeenLabel}</span>

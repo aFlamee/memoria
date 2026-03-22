@@ -13,13 +13,16 @@
 		{#each sessions as session (session.sessionId)}
 			<li class="stack-list__item">
 				<div class="stack-list__row">
-					<p class="stack-list__title">{session.sessionId}</p>
+					<p class="stack-list__title">{session.displayName}</p>
 					<span class="stack-list__pill">{session.status}</span>
 				</div>
 				<div class="stack-list__meta">
+					<span>{session.sessionShortId}</span>
 					<span>{session.taskCount} tasks</span>
 					<span>{session.totalCostUsdLabel}</span>
-					<span>{session.gitBranch}</span>
+					{#if session.displaySubtitle}
+						<span>{session.displaySubtitle}</span>
+					{/if}
 				</div>
 			</li>
 		{/each}

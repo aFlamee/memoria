@@ -39,6 +39,15 @@ export function formatDuration(durationMs: number) {
 	return `${minutes}m ${seconds}s`;
 }
 
+export function truncateLabel(value: string, maxLength = 64) {
+	const normalized = value.replace(/\s+/g, ' ').trim();
+	if (normalized.length <= maxLength) {
+		return normalized;
+	}
+
+	return `${normalized.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`;
+}
+
 export function getTaskRootNode(task: TaskGraphPayload): GraphNodePayload | null {
 	if (task.nodes.length === 0) {
 		return null;
@@ -61,7 +70,7 @@ export function getTaskRootNode(task: TaskGraphPayload): GraphNodePayload | null
 export function combineSessionTasks(session: SessionDetail): TaskGraphPayload {
 	return {
 		taskId: session.sessionId,
-		title: session.taskTitles[0] ?? session.sessionId,
+		title: session.displayName,
 		status: session.status,
 		durationMs: session.durationMs,
 		totalTokens: session.totalTokens,

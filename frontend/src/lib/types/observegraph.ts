@@ -19,7 +19,13 @@ export type InstanceSummary = {
 	totalTokens7dLabel: string;
 	totalCostUsd7d: number;
 	totalCostUsd7dLabel: string;
+	sparkline: InstanceSparklinePoint[];
 	tags: string[];
+};
+
+export type InstanceSparklinePoint = {
+	hour: string;
+	costUsd: number;
 };
 
 export type DashboardData = {
@@ -29,6 +35,9 @@ export type DashboardData = {
 
 export type SessionSummary = {
 	sessionId: string;
+	sessionShortId: string;
+	displayName: string;
+	displaySubtitle: string | null;
 	trigger: string;
 	status: string;
 	startedAt: string;
@@ -42,6 +51,7 @@ export type SessionSummary = {
 	gitBranch: string;
 	notes: string | null;
 	taskTitles: string[];
+	taskPreview: string[];
 };
 
 export type TemplateSummary = {

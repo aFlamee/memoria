@@ -9,6 +9,7 @@ type TaskDoc = Doc<'tasks'>;
 type ActionDoc = Doc<'actions'>;
 type InstanceWeeklyUsageDoc = Doc<'instanceWeeklyUsage'>;
 type SessionCostBreakdownDoc = Doc<'sessionCostBreakdowns'>;
+type AnalyticsHourlyDoc = Doc<'analyticsHourly'>;
 
 function formatRelativeTime(isoString: string | null) {
 	if (!isoString) return 'unknown';
@@ -28,6 +29,31 @@ function compactTokens(value: number) {
 	if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
 	if (value >= 1_000) return `${Math.round(value / 1_000)}k`;
 	return `${value}`;
+}
+
+function normalizeWhitespace(value: string) {
+	return value.replace(/\s+/g, ' ').trim();
+}
+
+function truncateText(value: string, maxLength: number) {
+	const normalized = normalizeWhitespace(value);
+	if (normalized.length <= maxLength) {
+		return normalized;
+	}
+
+	return `${normalized.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`;
+}
+
+function formatTriggerLabel(trigger: string) {
+	return normalizeWhitespace(trigger).toUpperCase();
+}
+
+function sessionShortId(sessionId: string) {
+	return sessionId.length <= 8 ? sessionId.toUpperCase() : sessionId.slice(0, 8).toUpperCase();
+}
+
+function roundCost(value: number) {
+	return Number(value.toFixed(6));
 }
 
 function actionTone(action: ActionDoc) {
@@ -52,6 +78,23 @@ function emptyWeeklyUsage(instance: InstanceDoc) {
 		totalTokens: 0,
 		totalCostUsd: 0
 	};
+}
+
+function currentHourBucket() {
+	const now = new Date();
+	now.setUTCMinutes(0, 0, 0);
+	return now.toISOString();
+}
+
+function buildRecentHourBuckets(hours: number) {
+	const start = new Date(currentHourBucket());
+	start.setUTCHours(start.getUTCHours() - Math.max(0, hours - 1));
+
+	return Array.from({ length: hours }, (_, index) => {
+		const bucket = new Date(start);
+		bucket.setUTCHours(start.getUTCHours() + index);
+		return bucket.toISOString();
+	});
 }
 
 async function findInstanceBySlugOrInstanceId(ctx: QueryCtx, slug: string) {
@@ -88,6 +131,18 @@ async function findSessionCostBreakdown(ctx: QueryCtx, sessionId: string) {
 		.query('sessionCostBreakdowns')
 		.withIndex('by_sessionId', (query) => query.eq('sessionId', sessionId))
 		.unique()) as SessionCostBreakdownDoc | null;
+}
+
+async function listAnalyticsHourlySince(ctx: QueryCtx, thresholdHour: string) {
+	const hours: AnalyticsHourlyDoc[] = [];
+	for await (const row of ctx.db
+		.query('analyticsHourly')
+		.withIndex('by_hourBucket', (query) => query.gte('hourBucket', thresholdHour))
+		.order('asc')) {
+		hours.push(row as AnalyticsHourlyDoc);
+	}
+
+	return hours;
 }
 
 async function listInstances(ctx: QueryCtx) {
@@ -143,7 +198,33 @@ async function listActionsForTask(ctx: QueryCtx, taskId: string) {
 	return actions;
 }
 
-function mapInstanceSummary(instance: InstanceDoc, usage: InstanceWeeklyUsageDoc | null) {
+function buildInstanceSparkline(
+	instanceId: string,
+	analyticsHours: AnalyticsHourlyDoc[],
+	hourBuckets: string[]
+) {
+	const costByHour = new Map<string, number>();
+
+	for (const hour of analyticsHours) {
+		const entry = hour.byInstance.find((item) => item.instanceId === instanceId);
+		if (!entry) {
+			continue;
+		}
+
+		costByHour.set(hour.hourBucket, roundCost(entry.costUsd));
+	}
+
+	return hourBuckets.map((hour) => ({
+		hour,
+		costUsd: costByHour.get(hour) ?? 0
+	}));
+}
+
+function mapInstanceSummary(
+	instance: InstanceDoc,
+	usage: InstanceWeeklyUsageDoc | null,
+	sparkline: ReturnType<typeof buildInstanceSparkline>
+) {
 	const weeklyUsage = usage ?? emptyWeeklyUsage(instance);
 	return {
 		instanceId: instance.instanceId,
@@ -164,6 +245,7 @@ function mapInstanceSummary(instance: InstanceDoc, usage: InstanceWeeklyUsageDoc
 		totalTokens7dLabel: compactTokens(weeklyUsage.totalTokens),
 		totalCostUsd7d: weeklyUsage.totalCostUsd,
 		totalCostUsd7dLabel: currency(weeklyUsage.totalCostUsd),
+		sparkline,
 		tags: instance.tags
 	};
 }
@@ -198,7 +280,8 @@ function mapInstanceProfile(instance: InstanceDoc, usage: InstanceWeeklyUsageDoc
 }
 
 function taskTitlesForSession(tasks: TaskDoc[], breakdown: SessionCostBreakdownDoc | null) {
-	const titlesFromBreakdown = breakdown?.byTask.map((task) => task.title).filter((title) => title.length > 0) ?? [];
+	const titlesFromBreakdown =
+		breakdown?.byTask.map((task) => task.title).filter((title) => title.length > 0) ?? [];
 	if (titlesFromBreakdown.length > 0) {
 		return titlesFromBreakdown.slice(0, 3);
 	}
@@ -206,13 +289,72 @@ function taskTitlesForSession(tasks: TaskDoc[], breakdown: SessionCostBreakdownD
 	return tasks.slice(0, 3).map((task) => task.title);
 }
 
+function buildSessionDisplayName(taskTitles: string[], notes: string | null, id: string) {
+	const primaryTask = taskTitles
+		.map((title) => normalizeWhitespace(title))
+		.find((title) => title.length > 0);
+	if (primaryTask) {
+		return truncateText(primaryTask, 72);
+	}
+
+	const note = normalizeWhitespace(notes ?? '');
+	if (note.length > 0) {
+		return truncateText(note, 72);
+	}
+
+	return `Session ${sessionShortId(id)}`;
+}
+
+function buildSessionSubtitle(session: SessionDoc) {
+	const parts = [
+		formatTriggerLabel(session.trigger),
+		formatRelativeTime(session.startedAt),
+		normalizeWhitespace(session.gitBranch ?? '')
+	].filter((value) => value.length > 0);
+
+	return parts.length > 0 ? parts.join(' · ') : null;
+}
+
+function buildTaskPreview(taskTitles: string[], displayName: string) {
+	const displayKey = normalizeWhitespace(displayName).toLowerCase();
+	const seen = new Set<string>();
+	const preview: string[] = [];
+
+	for (const title of taskTitles) {
+		const normalized = normalizeWhitespace(title);
+		if (!normalized) {
+			continue;
+		}
+
+		const key = normalized.toLowerCase();
+		if (key === displayKey || seen.has(key)) {
+			continue;
+		}
+
+		seen.add(key);
+		preview.push(truncateText(normalized, 56));
+
+		if (preview.length === 2) {
+			break;
+		}
+	}
+
+	return preview;
+}
+
 function mapSessionSummary(
 	session: SessionDoc,
 	sessionTasks: TaskDoc[],
 	breakdown: SessionCostBreakdownDoc | null
 ) {
+	const taskTitles = taskTitlesForSession(sessionTasks, breakdown);
+	const displayName = buildSessionDisplayName(taskTitles, session.notes, session.sessionId);
+
 	return {
 		sessionId: session.sessionId,
+		sessionShortId: sessionShortId(session.sessionId),
+		displayName,
+		displaySubtitle: buildSessionSubtitle(session),
 		trigger: session.trigger,
 		status: session.status,
 		startedAt: session.startedAt,
@@ -225,7 +367,8 @@ function mapSessionSummary(
 		actionCount: session.actionCount,
 		gitBranch: session.gitBranch ?? '',
 		notes: session.notes,
-		taskTitles: taskTitlesForSession(sessionTasks, breakdown)
+		taskTitles,
+		taskPreview: buildTaskPreview(taskTitles, displayName)
 	};
 }
 
@@ -282,16 +425,27 @@ export const dashboard = query({
 	args: {},
 	handler: async (ctx) => {
 		const instances = await listInstances(ctx);
-		const withUsage = await Promise.all(
-			instances.map(async (instance) => ({
-				instance,
-				usage: await findWeeklyUsage(ctx, instance.instanceId)
-			}))
-		);
+		const hourBuckets = buildRecentHourBuckets(7 * 24);
+		const thresholdHour = hourBuckets[0] ?? currentHourBucket();
+		const [withUsage, analyticsHours] = await Promise.all([
+			Promise.all(
+				instances.map(async (instance) => ({
+					instance,
+					usage: await findWeeklyUsage(ctx, instance.instanceId)
+				}))
+			),
+			listAnalyticsHourlySince(ctx, thresholdHour)
+		]);
 
 		return {
 			generatedAt: new Date().toISOString(),
-			instances: withUsage.map(({ instance, usage }) => mapInstanceSummary(instance, usage))
+			instances: withUsage.map(({ instance, usage }) =>
+				mapInstanceSummary(
+					instance,
+					usage,
+					buildInstanceSparkline(instance.instanceId, analyticsHours, hourBuckets)
+				)
+			)
 		};
 	}
 });

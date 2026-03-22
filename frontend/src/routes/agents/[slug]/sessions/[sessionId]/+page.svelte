@@ -172,10 +172,7 @@
 </script>
 
 {#if data.sessionView && graphIndex}
-	<div
-		class="session-workspace"
-		style={`--session-chrome-height: ${sessionChromeHeight}px;`}
-	>
+	<div class="session-workspace" style={`--session-chrome-height: ${sessionChromeHeight}px;`}>
 		<div class="session-workspace__graph-surface">
 			{#key data.sessionView.session.sessionId}
 				<SessionGraphExplorer
@@ -200,11 +197,13 @@
 			<div class="session-workspace__chrome-main">
 				<a class="session-workspace__back" href="../../">Back</a>
 				<div class="session-workspace__identity">
-					<h1>{data.sessionView.session.sessionId}</h1>
-					<p>
-						{data.sessionView.instance.name} · {data.sessionView.instance.environment} · {data
-							.sessionView.session.gitBranch}
-					</p>
+					<span class="session-workspace__tech-id">
+						Run {data.sessionView.session.sessionShortId} · {data.sessionView.session.sessionId}
+					</span>
+					<h1>{data.sessionView.session.displayName}</h1>
+					{#if data.sessionView.session.displaySubtitle}
+						<p>{data.sessionView.session.displaySubtitle}</p>
+					{/if}
 				</div>
 			</div>
 
