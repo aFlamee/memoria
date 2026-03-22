@@ -24,8 +24,17 @@ services:
       - path: ./.env
         required: false
     environment:
+      CI: "true"
       HOST: 0.0.0.0
       OBSERVEGRAPH_USE_MOCK_DATA: ${OBSERVEGRAPH_USE_MOCK_DATA:-true}
+      # Bind mounts on Docker Desktop often miss fs events; chokidar respects this for Vite HMR
+      CHOKIDAR_USEPOLLING: "1"
     ports:
       - "5173:5173"
-    command: pnpm dev:app:docker
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    command: sh -c "pnpm install --frozen-lockfile && exec pnpm dev:app:docker"
+
+volumes:
+  frontend_node_modules:
