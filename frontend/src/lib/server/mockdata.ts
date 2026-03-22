@@ -80,12 +80,17 @@ type ActionRecord = {
 	isFlagged: boolean;
 	command: string | null;
 	filePath: string | null;
-	stdout: string;
+	stdout: string | null;
 	stderr: string | null;
 	startedAt: string;
 	totalTokens: number;
 	costUsd: number;
 	isRecovery: boolean;
+	startedAt: string | null;
+	endedAt: string | null;
+	modelUsed: string | null;
+	exitCode: number | null;
+	parentActionIds?: string[];
 };
 
 type TemplateRecord = {
@@ -333,10 +338,14 @@ function mapSessionSummary(session: SessionRecord, sessionTasks: TaskRecord[]) {
 	};
 }
 
-function mapActionTone(action: ActionRecord): GraphNodePayload['tone'] {
+function mapActionTone(
+	action: ActionRecord,
+	isLast: boolean
+): GraphNodePayload['tone'] {
 	if (action.sequence === 1) return 'entry';
+	if (isLast) return 'exit';
+	if (action.status !== 'success' || action.riskScore >= 0.35) return 'risk';
 	if (action.isRecovery) return 'exit';
-	if (action.status !== 'success' || action.riskScore >= 0.2) return 'risk';
 	if (action.type === 'file_write' || action.type === 'shell') return 'write';
 	return 'core';
 }
@@ -425,7 +434,7 @@ export async function getMockSessionDetail(
 			.sort((left, right) => left.sequence - right.sequence)
 			.slice(0, 48);
 
-		const nodes = actions.map((action) => ({
+		const nodes = actions.map((action, index) => ({
 			id: action.actionId,
 			actionId: action.actionId,
 			label: action.stepName,
@@ -436,24 +445,91 @@ export async function getMockSessionDetail(
 			totalTokens: action.totalTokens,
 			riskScore: action.riskScore,
 			permissionLevel: action.permissionLevel,
-			tone: mapActionTone(action)
+			tone: mapActionTone(action, index === actions.length - 1),
+			sequence: action.sequence,
+			startedAt: action.startedAt ?? null,
+			endedAt: action.endedAt ?? null,
+			command: action.command,
+			filePath: action.filePath,
+			stdout: action.stdout ?? null,
+			stderr: action.stderr,
+			reasoning: action.reasoning ?? null,
+			costUsd: action.costUsd,
+			isFlagged: action.isFlagged,
+			modelUsed: action.modelUsed ?? null,
+			exitCode: action.exitCode ?? null
 		}));
 
-		const edges = actions.slice(0, -1).map((action, index) => {
-			const nextAction = actions[index + 1];
-			return {
-				id: `${action.actionId}__${nextAction.actionId}`,
-				source: action.actionId,
-				target: nextAction.actionId,
-				label: `${action.stepName} -> ${nextAction.stepName}`,
-				sourceLabel: action.stepName,
-				targetLabel: nextAction.stepName,
-				traversalCount: 1,
-				successRate: action.status === 'success' && nextAction.status === 'success' ? 1 : 0,
-				totalTokens: action.totalTokens + nextAction.totalTokens,
-				avgLatencyMs: Math.round((action.durationMs + nextAction.durationMs) / 2)
-			};
-		});
+		const edges: Array<{
+			id: string; source: string; target: string; label: string;
+			sourceLabel: string; targetLabel: string; traversalCount: number;
+			successRate: number; totalTokens: number; avgLatencyMs: number;
+		}> = [];
+
+		const actionById = new Map(actions.map((a) => [a.actionId, a]));
+
+		for (const action of actions) {
+			const parentIds = action.parentActionIds ?? [];
+
+			// Fall back to sequential pairing if no parentActionIds stored
+			if (parentIds.length === 0 && action.sequence > 1) {
+				const prev = actions.find((a) => a.sequence === action.sequence - 1);
+				if (prev) {
+					edges.push({
+						id: `${prev.actionId}__${action.actionId}`,
+						source: prev.actionId,
+						target: action.actionId,
+						label: `${prev.stepName} -> ${action.stepName}`,
+						sourceLabel: prev.stepName,
+						targetLabel: action.stepName,
+						traversalCount: 1,
+						successRate: prev.status === 'success' && action.status === 'success' ? 1 : 0,
+						totalTokens: prev.totalTokens + action.totalTokens,
+						avgLatencyMs: Math.round((prev.durationMs + action.durationMs) / 2)
+					});
+				}
+				continue;
+			}
+
+			for (const parentId of parentIds) {
+				const parent = actionById.get(parentId);
+				if (!parent) continue;
+
+				edges.push({
+					id: `${parentId}__${action.actionId}`,
+					source: parentId,
+					target: action.actionId,
+					label: `${parent.stepName} -> ${action.stepName}`,
+					sourceLabel: parent.stepName,
+					targetLabel: action.stepName,
+					traversalCount: 1,
+					successRate: parent.status === 'success' && action.status === 'success' ? 1 : 0,
+					totalTokens: parent.totalTokens + action.totalTokens,
+					avgLatencyMs: Math.round((parent.durationMs + action.durationMs) / 2)
+				});
+
+				// Recovery bypass: when parent is failed and this is a recovery step,
+				// also add bypass edges from each grandparent (failed node's parents).
+				if (parent.status === 'failed' && action.isRecovery) {
+					for (const grandParentId of (parent.parentActionIds ?? [])) {
+						const grandParent = actionById.get(grandParentId);
+						if (!grandParent) continue;
+						edges.push({
+							id: `${grandParentId}__${action.actionId}__bypass`,
+							source: grandParentId,
+							target: action.actionId,
+							label: `${grandParent.stepName} -> ${action.stepName} (bypass)`,
+							sourceLabel: grandParent.stepName,
+							targetLabel: action.stepName,
+							traversalCount: 1,
+							successRate: 1,
+							totalTokens: grandParent.totalTokens + action.totalTokens,
+							avgLatencyMs: Math.round((grandParent.durationMs + action.durationMs) / 2)
+						});
+					}
+				}
+			}
+		}
 
 		return {
 			taskId: task.taskId,

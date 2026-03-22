@@ -78,6 +78,18 @@ export type GraphNodePayload = {
 	riskScore: number;
 	permissionLevel: string;
 	tone: 'entry' | 'exit' | 'risk' | 'write' | 'core';
+	sequence: number;
+	startedAt: string | null;
+	endedAt: string | null;
+	command: string | null;
+	filePath: string | null;
+	stdout: string | null;
+	stderr: string | null;
+	reasoning: string | null;
+	costUsd: number;
+	isFlagged: boolean;
+	modelUsed: string | null;
+	exitCode: number | null;
 };
 
 export type GraphEdgePayload = {

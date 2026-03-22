@@ -1,114 +1,125 @@
 [
-	{
-		"templateId": "tmpl_create_observer_crate",
-		"title": "Create observer crate in zeroclaw",
-		"fingerprint": "create_observer_crate_in_zeroclaw",
-		"type": "code",
-		"technologies": ["rust", "tokio", "neo4j"],
-		"createdAt": "2026-03-15T21:00:00.000Z",
-		"runCount": 7,
-		"successRate": 0.86,
-		"avgTokens": 2363,
-		"avgDurationMs": 104382,
-		"bestRunId": "run_041",
-		"tags": ["observer", "instrumentation"]
-	},
-	{
-		"templateId": "tmpl_capture_action_events",
-		"title": "Capture action events across tool paths",
-		"fingerprint": "capture_action_events_across_tool_paths",
-		"type": "code",
-		"technologies": ["rust", "serde", "http"],
-		"createdAt": "2026-03-15T21:03:27.415Z",
-		"runCount": 7,
-		"successRate": 1,
-		"avgTokens": 2588,
-		"avgDurationMs": 101089,
-		"bestRunId": "run_010",
-		"tags": ["telemetry", "events"]
-	},
-	{
-		"templateId": "tmpl_ship_fastapi_instance_endpoints",
-		"title": "Ship FastAPI instance registration endpoints",
-		"fingerprint": "ship_fastapi_instance_registration_endpoints",
-		"type": "code",
-		"technologies": ["python", "fastapi", "pydantic"],
-		"createdAt": "2026-03-16T22:02:40.354Z",
-		"runCount": 6,
-		"successRate": 1,
-		"avgTokens": 2621,
-		"avgDurationMs": 125045,
-		"bestRunId": "run_027",
-		"tags": ["backend", "instances"]
-	},
-	{
-		"templateId": "tmpl_merge_task_runs_into_dag",
-		"title": "Merge task runs into the DAG",
-		"fingerprint": "merge_task_runs_into_the_dag",
-		"type": "code",
-		"technologies": ["python", "neo4j", "cypher"],
-		"createdAt": "2026-03-16T14:00:00.000Z",
-		"runCount": 6,
-		"successRate": 0.83,
-		"avgTokens": 2533,
-		"avgDurationMs": 111812,
-		"bestRunId": "run_036",
-		"tags": ["dag", "graph"]
-	},
-	{
-		"templateId": "tmpl_visualize_template_dag",
-		"title": "Visualize a task template DAG",
-		"fingerprint": "visualize_a_task_template_dag",
-		"type": "ui",
-		"technologies": ["svelte", "cytoscape", "typescript"],
-		"createdAt": "2026-03-16T14:03:20.218Z",
-		"runCount": 6,
-		"successRate": 0.83,
-		"avgTokens": 2937,
-		"avgDurationMs": 105979,
-		"bestRunId": "run_045",
-		"tags": ["frontend", "dag"]
-	},
-	{
-		"templateId": "tmpl_audit_risk_scoring",
-		"title": "Audit dangerous commands and risk scoring",
-		"fingerprint": "audit_dangerous_commands_and_risk_scoring",
-		"type": "analysis",
-		"technologies": ["python", "rules", "analytics"],
-		"createdAt": "2026-03-16T14:05:05.390Z",
-		"runCount": 6,
-		"successRate": 1,
-		"avgTokens": 2449,
-		"avgDurationMs": 105240,
-		"bestRunId": "run_014",
-		"tags": ["risk", "audit"]
-	},
-	{
-		"templateId": "tmpl_analyze_cost_breakdown",
-		"title": "Analyze cost breakdown by tool and task",
-		"fingerprint": "analyze_cost_breakdown_by_tool_and_task",
-		"type": "data",
-		"technologies": ["python", "sql", "analytics"],
-		"createdAt": "2026-03-16T06:00:00.000Z",
-		"runCount": 6,
-		"successRate": 1,
-		"avgTokens": 2672,
-		"avgDurationMs": 133483,
-		"bestRunId": "run_039",
-		"tags": ["cost", "tokens"]
-	},
-	{
-		"templateId": "tmpl_stream_weekly_instance_usage",
-		"title": "Stream weekly instance usage to the dashboard",
-		"fingerprint": "stream_weekly_instance_usage_to_the_dashboard",
-		"type": "backend",
-		"technologies": ["python", "neo4j", "react"],
-		"createdAt": "2026-03-16T06:02:30.780Z",
-		"runCount": 6,
-		"successRate": 1,
-		"avgTokens": 2320,
-		"avgDurationMs": 100370,
-		"bestRunId": "run_016",
-		"tags": ["instances", "usage"]
-	}
+  {
+    "templateId": "tmpl_implement_user_auth",
+    "title": "Implement user auth flow",
+    "fingerprint": "implement_user_auth_flow",
+    "type": "code",
+    "technologies": [
+      "typescript",
+      "fastify",
+      "prisma"
+    ],
+    "createdAt": "2026-03-20T06:43:00.000Z",
+    "runCount": 4,
+    "successRate": 1,
+    "avgTokens": 3443,
+    "avgDurationMs": 194876,
+    "bestRunId": "run_007",
+    "tags": [
+      "auth",
+      "backend"
+    ]
+  },
+  {
+    "templateId": "tmpl_setup_db_migrations",
+    "title": "Setup database migrations",
+    "fingerprint": "setup_database_migrations",
+    "type": "code",
+    "technologies": [
+      "prisma",
+      "postgresql"
+    ],
+    "createdAt": "2026-03-20T06:48:27.987Z",
+    "runCount": 4,
+    "successRate": 1,
+    "avgTokens": 3201,
+    "avgDurationMs": 182112,
+    "bestRunId": "run_014",
+    "tags": [
+      "database",
+      "migration"
+    ]
+  },
+  {
+    "templateId": "tmpl_deploy_docker_service",
+    "title": "Deploy Docker service",
+    "fingerprint": "deploy_docker_service",
+    "type": "shell",
+    "technologies": [
+      "docker",
+      "nginx",
+      "systemd"
+    ],
+    "createdAt": "2026-03-20T06:54:48.732Z",
+    "runCount": 4,
+    "successRate": 1,
+    "avgTokens": 2459,
+    "avgDurationMs": 183019,
+    "bestRunId": "run_009",
+    "tags": [
+      "deploy",
+      "infra"
+    ]
+  },
+  {
+    "templateId": "tmpl_run_test_suite",
+    "title": "Run full test suite",
+    "fingerprint": "run_full_test_suite",
+    "type": "code",
+    "technologies": [
+      "vitest",
+      "playwright",
+      "typescript"
+    ],
+    "createdAt": "2026-03-20T06:58:21.701Z",
+    "runCount": 4,
+    "successRate": 1,
+    "avgTokens": 2564,
+    "avgDurationMs": 188973,
+    "bestRunId": "run_022",
+    "tags": [
+      "testing",
+      "ci"
+    ]
+  },
+  {
+    "templateId": "tmpl_analyze_bundle_size",
+    "title": "Analyze bundle size",
+    "fingerprint": "analyze_bundle_size",
+    "type": "code",
+    "technologies": [
+      "vite",
+      "rollup",
+      "typescript"
+    ],
+    "createdAt": "2026-03-20T08:08:27.669Z",
+    "runCount": 4,
+    "successRate": 1,
+    "avgTokens": 1928,
+    "avgDurationMs": 113413,
+    "bestRunId": "run_005",
+    "tags": [
+      "performance",
+      "frontend"
+    ]
+  },
+  {
+    "templateId": "tmpl_fix_type_errors",
+    "title": "Fix TypeScript errors",
+    "fingerprint": "fix_typescript_errors",
+    "type": "code",
+    "technologies": [
+      "typescript"
+    ],
+    "createdAt": "2026-03-20T08:12:43.246Z",
+    "runCount": 4,
+    "successRate": 1,
+    "avgTokens": 2311,
+    "avgDurationMs": 170300,
+    "bestRunId": "run_024",
+    "tags": [
+      "bugfix",
+      "types"
+    ]
+  }
 ]
