@@ -1,88 +1,39 @@
-# Welcome to your Convex functions directory!
+# Memoria Convex Layer
 
-Write your Convex functions here.
-See https://docs.convex.dev/functions for more.
+This directory owns Memoria's persistent data model and the internal HTTP
+contract used by the FastAPI backend.
 
-A query function that takes two arguments looks like:
+## Source Of Truth
 
-```ts
-// convex/myFunctions.ts
-import { query } from './_generated/server';
-import { v } from 'convex/values';
+- `schema.ts`: table definitions.
+- `observegraphStore.ts`: writes plus derived-table maintenance.
+- `observegraph.ts`: frontend-facing queries and dashboard reads.
+- `http.ts`: internal HTTP routes used by `backend/api`.
 
-export const myQueryFunction = query({
-	// Validators for arguments.
-	args: {
-		first: v.number(),
-		second: v.string()
-	},
+Do not edit `_generated/` by hand.
 
-	// Function implementation.
-	handler: async (ctx, args) => {
-		// Read the database as many times as you need here.
-		// See https://docs.convex.dev/database/reading-data.
-		const documents = await ctx.db.query('tablename').collect();
+## Write Path
 
-		// Arguments passed from the client are properties of the args object.
-		console.log(args.first, args.second);
+The supported ingest path is:
 
-		// Write arbitrary JavaScript here: filter, aggregate, build derived data,
-		// remove non-public properties, or create new objects.
-		return documents;
-	}
-});
+1. agent/runtime -> `backend/api`
+2. `backend/api` -> `convex/http.ts`
+3. `http.ts` -> `observegraphStore.ts` mutations
+
+The internal HTTP routes are protected by `MEMORIA_CONVEX_INGEST_SECRET`.
+
+Do not write directly to base tables unless the matching derived data is kept in
+sync. The dashboard depends on those derived rows and on `instances.metrics`.
+
+## Read Path
+
+- The frontend server loaders query `api.observegraph.*`.
+- Live reads use `PUBLIC_CONVEX_URL`.
+- Local mock mode is controlled by `OBSERVEGRAPH_USE_MOCK_DATA`.
+
+## Useful Commands
+
+```bash
+npx convex dev
+pnpm run codegen:convex
 ```
-
-Using this query function in a React component looks like:
-
-```ts
-const data = useQuery(api.myFunctions.myQueryFunction, {
-	first: 10,
-	second: 'hello'
-});
-```
-
-A mutation function looks like:
-
-```ts
-// convex/myFunctions.ts
-import { mutation } from './_generated/server';
-import { v } from 'convex/values';
-
-export const myMutationFunction = mutation({
-	// Validators for arguments.
-	args: {
-		first: v.string(),
-		second: v.string()
-	},
-
-	// Function implementation.
-	handler: async (ctx, args) => {
-		// Insert or modify documents in the database here.
-		// Mutations can also read from the database like queries.
-		// See https://docs.convex.dev/database/writing-data.
-		const message = { body: args.first, author: args.second };
-		const id = await ctx.db.insert('messages', message);
-
-		// Optionally, return a value from your mutation.
-		return await ctx.db.get('messages', id);
-	}
-});
-```
-
-Using this mutation function in a React component looks like:
-
-```ts
-const mutation = useMutation(api.myFunctions.myMutationFunction);
-function handleButtonPress() {
-	// fire and forget, the most common way to use mutations
-	mutation({ first: 'Hello!', second: 'me' });
-	// OR
-	// use the result once the mutation has completed
-	mutation({ first: 'Hello!', second: 'me' }).then((result) => console.log(result));
-}
-```
-
-Use the Convex CLI to push your functions to a deployment. See everything
-the Convex CLI can do by running `npx convex -h` in your project root
-directory. To learn more, launch the docs with `npx convex docs`.

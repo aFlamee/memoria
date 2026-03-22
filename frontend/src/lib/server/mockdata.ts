@@ -82,7 +82,6 @@ type ActionRecord = {
 	filePath: string | null;
 	stdout: string | null;
 	stderr: string | null;
-	startedAt: string;
 	totalTokens: number;
 	costUsd: number;
 	isRecovery: boolean;
@@ -177,6 +176,124 @@ function sessionShortId(sessionId: string) {
 	return sessionId.length <= 8 ? sessionId.toUpperCase() : sessionId.slice(0, 8).toUpperCase();
 }
 
+const INSTANCE_NOISE_TOKENS = new Set([
+	'macbook',
+	'pro',
+	'air',
+	'desktop',
+	'server',
+	'instance',
+	'von'
+]);
+
+const TASK_LEADING_PHRASES = /^(?:find out|check|determine|show|read|create|get)\b[:\s-]*/i;
+const TASK_SPLIT_PATTERN = /\b(?:and|then)\b|[,;]/i;
+
+function titleCaseWord(value: string) {
+	const lower = value.toLowerCase();
+	return lower.charAt(0).toUpperCase() + lower.slice(1);
+}
+
+function humanizeIdentifier(value: string) {
+	return normalizeWhitespace(value.replace(/[._-]+/g, ' '))
+		.split(' ')
+		.filter((token) => token.length > 0)
+		.map((token) => titleCaseWord(token))
+		.join(' ');
+}
+
+function compactInstanceLabel(name: string, slug: string) {
+	const nameTokens = humanizeIdentifier(name)
+		.split(' ')
+		.filter((token) => token.length > 0);
+	const trimmedNameTokens = [...nameTokens];
+
+	while (
+		trimmedNameTokens.length > 0 &&
+		INSTANCE_NOISE_TOKENS.has(trimmedNameTokens[0]?.toLowerCase() ?? '')
+	) {
+		trimmedNameTokens.shift();
+	}
+
+	const candidate = (trimmedNameTokens.length > 0 ? trimmedNameTokens : nameTokens)
+		.slice(-2)
+		.join(' ');
+	if (candidate.length > 0) {
+		return candidate;
+	}
+
+	const fallback = humanizeIdentifier(slug)
+		.split(' ')
+		.filter((token) => token.length > 0)
+		.slice(-2)
+		.join(' ');
+
+	return fallback || 'Instance';
+}
+
+function formatSessionDate(isoString: string) {
+	const formatter = new Intl.DateTimeFormat('en-GB', {
+		timeZone: 'Europe/Berlin',
+		day: '2-digit',
+		month: '2-digit',
+		year: 'numeric'
+	});
+
+	return formatter.format(new Date(isoString)).replace(/\//g, '-');
+}
+
+function cleanSummarySubject(value: string) {
+	return humanizeIdentifier(
+		value
+			.replace(/\b(?:there is|is running|currently|current)\b/gi, ' ')
+			.replace(/\s+/g, ' ')
+			.trim()
+	);
+}
+
+function summarizeTaskLabel(value: string) {
+	const normalized = normalizeWhitespace(value).replace(/[.]+$/g, '');
+	if (!normalized) {
+		return 'Session';
+	}
+
+	const usageMatch = normalized.match(/\bhow much (.+?) is used\b/i);
+	if (usageMatch?.[1]) {
+		return truncateText(`${cleanSummarySubject(usageMatch[1])} Usage`, 32);
+	}
+
+	const versionMatch = normalized.match(/\b(?:what|which) (.+?) version(?: is running)?\b/i);
+	if (versionMatch?.[1]) {
+		return truncateText(`${cleanSummarySubject(versionMatch[1])} Version`, 32);
+	}
+
+	const spaceMatch = normalized.match(/\bfree (.+?) space\b/i);
+	if (spaceMatch?.[1]) {
+		return truncateText(`${cleanSummarySubject(spaceMatch[1])} Space`, 32);
+	}
+
+	if (/\bcreate (?:the )?file\b/i.test(normalized)) {
+		return 'File Check';
+	}
+
+	const significantTokens = normalizeWhitespace(normalized.split(TASK_SPLIT_PATTERN)[0] ?? '')
+		.replace(TASK_LEADING_PHRASES, '')
+		.replace(/\b(?:how much|what|which)\b/gi, ' ')
+		.replace(/\b(?:there is|is running)\b/gi, ' ')
+		.trim()
+		.split(/\s+/)
+		.map((token) => token.replace(/^[^a-z0-9]+|[^a-z0-9]+$/gi, ''))
+		.filter((token) => token.length > 0)
+		.filter(
+			(token) =>
+				!new Set(['the', 'a', 'an', 'to', 'for', 'of', 'in', 'on']).has(token.toLowerCase())
+		)
+		.slice(0, 3)
+		.map((token) => titleCaseWord(token));
+
+	return truncateText(significantTokens.join(' '), 32) || 'Session';
+}
+
 function formatTriggerLabel(trigger: string) {
 	return normalizeWhitespace(trigger).toUpperCase();
 }
@@ -205,6 +322,10 @@ function buildInstanceSparkline(instanceId: string, actions: ActionRecord[]) {
 
 	for (const action of actions) {
 		if (action.instanceId !== instanceId) {
+			continue;
+		}
+
+		if (!action.startedAt) {
 			continue;
 		}
 
@@ -259,20 +380,32 @@ function mapInstanceProfile(instance: InstanceRecord) {
 	};
 }
 
-function buildSessionDisplayName(taskTitles: string[], notes: string | null, sessionId: string) {
+function buildTaskSummary(taskTitles: string[], notes: string | null) {
 	const primaryTask = taskTitles
 		.map((title) => normalizeWhitespace(title))
 		.find((title) => title.length > 0);
 	if (primaryTask) {
-		return truncateText(primaryTask, 72);
+		return summarizeTaskLabel(primaryTask);
 	}
 
 	const note = normalizeWhitespace(notes ?? '');
 	if (note.length > 0) {
-		return truncateText(note, 72);
+		return summarizeTaskLabel(note);
 	}
 
-	return `Session ${sessionShortId(sessionId)}`;
+	return 'Session';
+}
+
+function buildSessionDisplayName(
+	instance: Pick<InstanceRecord, 'name' | 'slug'>,
+	session: Pick<SessionRecord, 'startedAt'>,
+	taskTitles: string[],
+	notes: string | null
+) {
+	return truncateText(
+		`${compactInstanceLabel(instance.name, instance.slug)} ${formatSessionDate(session.startedAt)} ${buildTaskSummary(taskTitles, notes)}`,
+		72
+	);
 }
 
 function buildSessionSubtitle(session: SessionRecord) {
@@ -312,9 +445,13 @@ function buildTaskPreview(taskTitles: string[], displayName: string) {
 	return preview;
 }
 
-function mapSessionSummary(session: SessionRecord, sessionTasks: TaskRecord[]) {
+function mapSessionSummary(
+	instance: Pick<InstanceRecord, 'name' | 'slug'>,
+	session: SessionRecord,
+	sessionTasks: TaskRecord[]
+) {
 	const taskTitles = sessionTasks.slice(0, 3).map((task) => task.title);
-	const displayName = buildSessionDisplayName(taskTitles, session.notes, session.sessionId);
+	const displayName = buildSessionDisplayName(instance, session, taskTitles, session.notes);
 
 	return {
 		sessionId: session.sessionId,
@@ -338,10 +475,7 @@ function mapSessionSummary(session: SessionRecord, sessionTasks: TaskRecord[]) {
 	};
 }
 
-function mapActionTone(
-	action: ActionRecord,
-	isLast: boolean
-): GraphNodePayload['tone'] {
+function mapActionTone(action: ActionRecord, isLast: boolean): GraphNodePayload['tone'] {
 	if (action.sequence === 1) return 'entry';
 	if (isLast) return 'exit';
 	if (action.status !== 'success' || action.riskScore >= 0.35) return 'risk';
@@ -400,6 +534,7 @@ export async function getMockInstanceOverview(slug: string): Promise<AgentOvervi
 		instance: mapInstanceProfile(instance),
 		sessions: sessions.map((session) =>
 			mapSessionSummary(
+				instance,
 				session,
 				dataset.tasks.filter((task) => task.sessionId === session.sessionId)
 			)
@@ -461,9 +596,16 @@ export async function getMockSessionDetail(
 		}));
 
 		const edges: Array<{
-			id: string; source: string; target: string; label: string;
-			sourceLabel: string; targetLabel: string; traversalCount: number;
-			successRate: number; totalTokens: number; avgLatencyMs: number;
+			id: string;
+			source: string;
+			target: string;
+			label: string;
+			sourceLabel: string;
+			targetLabel: string;
+			traversalCount: number;
+			successRate: number;
+			totalTokens: number;
+			avgLatencyMs: number;
 		}> = [];
 
 		const actionById = new Map(actions.map((a) => [a.actionId, a]));
@@ -511,7 +653,7 @@ export async function getMockSessionDetail(
 				// Recovery bypass: when parent is failed and this is a recovery step,
 				// also add bypass edges from each grandparent (failed node's parents).
 				if (parent.status === 'failed' && action.isRecovery) {
-					for (const grandParentId of (parent.parentActionIds ?? [])) {
+					for (const grandParentId of parent.parentActionIds ?? []) {
 						const grandParent = actionById.get(grandParentId);
 						if (!grandParent) continue;
 						edges.push({
@@ -549,7 +691,7 @@ export async function getMockSessionDetail(
 	return {
 		instance: mapInstanceProfile(instance),
 		session: {
-			...mapSessionSummary(session, sessionTasks),
+			...mapSessionSummary(instance, session, sessionTasks),
 			tasks
 		}
 	};
