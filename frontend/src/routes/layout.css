@@ -32,6 +32,7 @@ html {
 		var(--bg);
 	color: var(--ink);
 	font-family: var(--font-body);
+	overscroll-behavior: none;
 }
 
 body {
@@ -40,6 +41,7 @@ body {
 	background:
 		radial-gradient(circle at top left, rgba(228, 94, 41, 0.12), transparent 28%),
 		radial-gradient(circle at top right, rgba(24, 111, 101, 0.1), transparent 24%);
+	overscroll-behavior: none;
 }
 
 a {

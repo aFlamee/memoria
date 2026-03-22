@@ -9,6 +9,7 @@
 <a
 	class="instance-tile"
 	href={resolve(`/agents/${instance.slug}`)}
+	data-sveltekit-preload-data="eager"
 	aria-label={`Open ${instance.name} details`}
 >
 	<div class="instance-tile__header">

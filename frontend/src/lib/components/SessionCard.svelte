@@ -15,6 +15,7 @@
 <a
 	class="session-card"
 	href={resolve(`/agents/${agentSlug}/sessions/${session.sessionId}`)}
+	data-sveltekit-preload-data="eager"
 	aria-label={`Open session ${session.sessionId}`}
 >
 	<div class="session-card__top-row">
