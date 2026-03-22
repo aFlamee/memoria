@@ -23,7 +23,7 @@
 	]);
 </script>
 
-<PageShell title="ObserveGraph" description="Open an instance.">
+<PageShell title="memoria" description="Open an instance.">
 	<section class="summary-strip" aria-label="Fleet summary">
 		{#each summary as item (item.label)}
 			<div class="summary-strip__card">

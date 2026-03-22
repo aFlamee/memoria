@@ -107,15 +107,7 @@
 		cy.stop();
 
 		if (viewportMode === 'graph') {
-			cy.animate(
-				{
-					fit: {
-						eles: cy.elements(),
-						padding: 64
-					}
-				},
-				{ duration: 320 }
-			);
+			cy.animate({ fit: { eles: cy.elements(), padding: 80 } }, { duration: 280 });
 			return;
 		}
 
@@ -169,13 +161,10 @@
 
 		const initialize = async () => {
 			const { default: cytoscape } = await import('cytoscape');
-			const { default: cytoscapeDagre } = await import('cytoscape-dagre');
 
 			if (isUnmounted) {
 				return;
 			}
-
-			cytoscape.use(cytoscapeDagre);
 
 			const elements: ElementDefinition[] = [
 				...graph.nodes.map((node) => ({
@@ -184,6 +173,7 @@
 						id: node.id,
 						label: node.label,
 						toolName: node.toolName,
+						tone: node.tone,
 						status: node.status,
 						totalTokens: node.totalTokens,
 						durationMs: node.durationMs,
@@ -207,137 +197,184 @@
 				layout: { name: 'preset' },
 				userPanningEnabled: true,
 				userZoomingEnabled: true,
-				boxSelectionEnabled: false,
+				boxSelectionEnabled: true,
+				selectionType: 'additive' as never,
 				autoungrabify: false,
-				minZoom: 0.3,
-				maxZoom: 2.2,
+				minZoom: 0.08,
+				maxZoom: 4,
+				wheelSensitivity: 0.15,
 				style: [
+					// ── Base node ─────────────────────────────────────────────
 					{
 						selector: 'node',
 						style: {
-							label: '',
-							width: 'mapData(totalTokens, 64, 1200, 12, 24)',
-							height: 'mapData(totalTokens, 64, 1200, 12, 24)',
+							label: 'data(label)',
+							'text-valign': 'bottom',
+							'text-halign': 'center',
+							'text-margin-y': 5,
+							'font-size': 8,
+							'font-family': '"IBM Plex Mono", "Courier New", monospace',
+							color: 'rgba(16, 16, 16, 0.65)',
+							'text-max-width': 80,
+							'text-wrap': 'ellipsis',
+							width: 'mapData(totalTokens, 64, 1500, 26, 46)',
+							height: 'mapData(totalTokens, 64, 1500, 26, 46)',
 							shape: 'ellipse',
-							'background-color': 'rgba(16, 16, 16, 0.12)',
-							'border-width': 1.5,
-							'border-color': 'rgba(16, 16, 16, 0.32)',
+							'background-color': 'rgba(100, 116, 139, 0.18)',
+							'border-width': 2,
+							'border-color': 'rgba(100, 116, 139, 0.55)',
 							'overlay-opacity': 0,
 							opacity: 1,
 							'transition-property': 'opacity, border-width, border-color, background-color',
 							'transition-duration': '150ms'
 						}
 					},
+					// ── Tool-type colours (core / write tones) ────────────────
+					{
+						selector: 'node[toolName = "read_file"]',
+						style: {
+							'background-color': 'rgba(59, 130, 246, 0.18)',
+							'border-color': 'rgba(59, 130, 246, 0.65)'
+						}
+					},
+					{
+						selector: 'node[toolName = "write_file"]',
+						style: {
+							'background-color': 'rgba(245, 158, 11, 0.18)',
+							'border-color': 'rgba(245, 158, 11, 0.65)'
+						}
+					},
+					{
+						selector: 'node[toolName = "bash"]',
+						style: {
+							'background-color': 'rgba(139, 92, 246, 0.18)',
+							'border-color': 'rgba(139, 92, 246, 0.65)'
+						}
+					},
+					{
+						selector: 'node[toolName = "grep"]',
+						style: {
+							'background-color': 'rgba(20, 184, 166, 0.18)',
+							'border-color': 'rgba(20, 184, 166, 0.65)'
+						}
+					},
+					{
+						selector: 'node[toolName = "list_dir"]',
+						style: {
+							'background-color': 'rgba(34, 197, 94, 0.18)',
+							'border-color': 'rgba(34, 197, 94, 0.6)'
+						}
+					},
+					{
+						selector: 'node[toolName = "api_call"]',
+						style: {
+							'background-color': 'rgba(99, 102, 241, 0.18)',
+							'border-color': 'rgba(99, 102, 241, 0.62)'
+						}
+					},
+					// ── Tone overrides (take priority over tool colours) ──────
+					{
+						selector: 'node[tone = "entry"]',
+						style: {
+							shape: 'diamond',
+							'background-color': 'rgba(24, 111, 101, 0.22)',
+							'border-color': 'rgba(24, 111, 101, 0.85)',
+							'border-width': 2.5,
+							width: 38,
+							height: 38
+						}
+					},
+					{
+						selector: 'node[tone = "exit"]',
+						style: {
+							shape: 'round-rectangle',
+							'background-color': 'rgba(228, 94, 41, 0.18)',
+							'border-color': 'rgba(228, 94, 41, 0.8)',
+							'border-width': 2.5,
+							width: 38,
+							height: 32
+						}
+					},
+					{
+						selector: 'node[tone = "risk"]',
+						style: {
+							shape: 'triangle',
+							'background-color': 'rgba(200, 77, 53, 0.2)',
+							'border-color': 'rgba(200, 77, 53, 0.85)',
+							'border-width': 2.2
+						}
+					},
+					// ── Selection / focus states ───────────────────────────────
 					{
 						selector: 'node.graph-node--muted',
-						style: {
-							opacity: 0.18
-						}
+						style: { opacity: 0.15 }
 					},
 					{
 						selector: 'node.graph-node--root',
 						style: {
-							'background-color': 'rgba(24, 111, 101, 0.22)',
-							'border-color': 'rgba(24, 111, 101, 0.7)',
-							'border-width': 2.3
+							'border-width': 3,
+							'border-color': 'rgba(24, 111, 101, 0.9)'
 						}
 					},
 					{
 						selector: 'node:selected',
 						style: {
-							'border-width': 2.7,
-							'border-color': 'rgba(16, 16, 16, 0.85)',
+							'border-width': 3.2,
+							'border-color': 'rgba(16, 16, 16, 0.9)',
 							'overlay-opacity': 0
 						}
 					},
+					// ── Edges ─────────────────────────────────────────────────
 					{
 						selector: 'edge',
 						style: {
-							width: 1,
+							width: 1.4,
 							'curve-style': 'bezier',
-							'line-color': 'rgba(16, 16, 16, 0.18)',
+							'line-color': 'rgba(16, 16, 16, 0.22)',
 							'target-arrow-shape': 'triangle',
-							'target-arrow-color': 'rgba(16, 16, 16, 0.22)',
-							'arrow-scale': 0.45,
-							opacity: 0.82,
+							'target-arrow-color': 'rgba(16, 16, 16, 0.28)',
+							'arrow-scale': 0.6,
+							opacity: 0.85,
 							'transition-property': 'opacity, width, line-color, target-arrow-color',
 							'transition-duration': '150ms'
 						}
 					},
 					{
 						selector: 'edge.graph-edge--muted',
-						style: {
-							opacity: 0.1
-						}
+						style: { opacity: 0.08 }
 					},
 					{
 						selector: 'edge:selected',
 						style: {
-							width: 1.8,
-							'line-color': 'rgba(228, 94, 41, 0.6)',
-							'target-arrow-color': 'rgba(228, 94, 41, 0.6)',
+							width: 2.2,
+							'line-color': 'rgba(228, 94, 41, 0.7)',
+							'target-arrow-color': 'rgba(228, 94, 41, 0.7)',
 							opacity: 1
 						}
 					}
 				] as never
 			});
 
-			const components = cy.elements().components();
-
-			if (components.length <= 1) {
-				cy.elements()
-					.layout({
-						name: 'dagre',
-						rankDir: 'TB',
-						nodeSep: 40,
-						rankSep: 60,
-						edgeSep: 20,
-						ranker: 'network-simplex',
-						animate: false,
-						fit: true,
-						padding: 24
-					} as never)
-					.run();
-			} else {
-				components.sort((a, b) => {
-					const aId = a.nodes().map((n) => n.id()).sort()[0] ?? '';
-					const bId = b.nodes().map((n) => n.id()).sort()[0] ?? '';
-					return aId.localeCompare(bId);
-				});
-
-				const w = container.clientWidth || 800;
-				const h = container.clientHeight || 600;
-				const cols = Math.max(1, Math.round(Math.sqrt(components.length * (w / h))));
-				const rows = Math.ceil(components.length / cols);
-				const cellW = w / cols;
-				const cellH = h / rows;
-
-				for (let i = 0; i < components.length; i++) {
-					components[i]
-						.layout({
-							name: 'dagre',
-							rankDir: 'TB',
-							nodeSep: 24,
-							rankSep: 36,
-							edgeSep: 12,
-							ranker: 'network-simplex',
-							animate: false,
-							fit: false,
-							padding: 0
-						} as never)
-						.run();
-
-					const col = i % cols;
-					const row = Math.floor(i / cols);
-					const bb = components[i].boundingBox();
-					const dx = cellW * (col + 0.5) - (bb.x1 + bb.x2) / 2;
-					const dy = cellH * (row + 0.5) - (bb.y1 + bb.y2) / 2;
-
-					components[i].nodes().shift({ x: dx, y: dy });
-				}
-
-				cy.fit(undefined, 24);
-			}
+			// Force-directed layout — each task graph is a component; cose handles
+			// component spacing automatically, giving a natural floating canvas feel.
+			cy.layout({
+				name: 'cose',
+				animate: false,
+				fit: true,
+				padding: 80,
+				componentSpacing: 160,
+				idealEdgeLength: () => 100,
+				nodeRepulsion: () => 900000,
+				edgeElasticity: () => 120,
+				nestingFactor: 5,
+				gravity: 60,
+				numIter: 1200,
+				initialTemp: 250,
+				coolingFactor: 0.95,
+				minTemp: 1,
+				randomize: true,
+				nodeOverlap: 8
+			} as never).run();
 
 			const emitNodeSelection = (nodeId: string) => {
 				onNodeSelect?.(nodeId);

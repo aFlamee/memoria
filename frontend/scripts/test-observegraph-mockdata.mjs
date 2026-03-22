@@ -9,17 +9,15 @@ const sharedRootActions = first.actions.filter(
 	(action) => action.sequence === 1 && action.stepName === 'load root task context'
 );
 const maxTasksPerSession = Math.max(...first.sessions.map((session) => session.taskCount));
-const averageActionsPerTask =
-	actionCounts.reduce((total, count) => total + count, 0) / actionCounts.length;
 
 assert.deepEqual(first, second, 'mock data generation must be deterministic for the same seed');
-assert.equal(first.instances.length, 7, 'must generate seven instances');
-assert.equal(first.tasks.length, 50, 'must generate fifty task runs');
-assert.equal(first.sessions.length, 12, 'must pack runs into twelve denser sessions');
+assert.equal(first.instances.length, 3, 'must generate three instances');
+assert.ok(first.tasks.length >= 24, 'must generate at least twenty-four task runs');
+assert.equal(first.sessions.length, 6, 'must have six sessions (2 per instance)');
 assert.equal(
 	new Set(first.tasks.map((task) => task.instanceId)).size,
-	7,
-	'tasks must be distributed across instances'
+	3,
+	'tasks must be distributed across three instances'
 );
 assert.ok(first.stepNodes.length > 0, 'must derive step nodes');
 assert.ok(first.stepEdges.length > 0, 'must derive step edges');
@@ -28,22 +26,22 @@ assert.equal(
 	first.tasks.length,
 	'every task must start from the shared root action'
 );
-assert.equal(
-	Math.min(...actionCounts),
-	2,
-	'compact runs should keep the minimum action count at two'
+assert.ok(
+	Math.min(...actionCounts) >= 4,
+	'minimum action count must be at least 4 (entry + path steps)'
 );
-assert.equal(
-	Math.max(...actionCounts),
-	3,
-	'compact runs should cap the maximum action count at three'
-);
-assert.ok(averageActionsPerTask <= 2.25, 'average action count should stay compact');
-assert.ok(maxTasksPerSession >= 6, 'at least one session should aggregate many compact tasks');
+assert.ok(Math.max(...actionCounts) <= 7, 'maximum action count must be at most 7');
+assert.ok(maxTasksPerSession >= 4, 'at least four tasks per session');
 
 for (const task of first.tasks) {
 	const taskActions = first.actions.filter((action) => action.taskId === task.taskId);
 	assert.equal(taskActions.length, task.actionCount, `task ${task.taskId} action count must match`);
 }
+
+// Verify developer-friendly naming
+const instanceSlugs = new Set(first.instances.map((i) => i.slug));
+assert.ok(instanceSlugs.has('local-dev'), 'must include local-dev instance');
+assert.ok(instanceSlugs.has('staging-runner'), 'must include staging-runner instance');
+assert.ok(instanceSlugs.has('ci-github-actions'), 'must include ci-github-actions instance');
 
 console.log(JSON.stringify(summarizeMockData(first), null, 2));

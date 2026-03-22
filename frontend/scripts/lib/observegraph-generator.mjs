@@ -1,10 +1,15 @@
 import { createHash } from 'node:crypto';
 
-const TOTAL_TASK_RUNS = 50;
-const INSTANCE_COUNT = 7;
-const SESSION_TASK_COUNTS = [7, 6, 5, 5, 4, 4, 4, 4, 3, 3, 3, 2];
+const INSTANCE_COUNT = 3;
+const SESSIONS_PER_INSTANCE = 2;
+const MIN_TASKS_PER_SESSION = 4;
+const TOTAL_SESSIONS = INSTANCE_COUNT * SESSIONS_PER_INSTANCE;
+const MIN_TOTAL_TASKS = TOTAL_SESSIONS * MIN_TASKS_PER_SESSION;
 const SHARED_ENTRY_STEP_NAME = 'load root task context';
 const SHARED_ENTRY_FILE_PATH = '/workspace/observegraph/AGENTS.md';
+
+// Path type weights: failure ~10%, successA ~25%, successB ~25%, recovery ~12%, branch ~28%
+const PATH_WEIGHTS = { failure: 0.10, successA: 0.25, successB: 0.25, recovery: 0.12, branch: 0.28 };
 
 function mulberry32(seed) {
 	let value = seed >>> 0;
@@ -44,454 +49,763 @@ function hashSnapshot(value) {
 	return createHash('sha256').update(JSON.stringify(value)).digest('hex');
 }
 
+function pickPath(rng) {
+	const roll = rng();
+	if (roll < PATH_WEIGHTS.failure) return 'failure';
+	if (roll < PATH_WEIGHTS.failure + PATH_WEIGHTS.successA) return 'successA';
+	if (roll < PATH_WEIGHTS.failure + PATH_WEIGHTS.successA + PATH_WEIGHTS.successB) return 'successB';
+	if (roll < PATH_WEIGHTS.failure + PATH_WEIGHTS.successA + PATH_WEIGHTS.successB + PATH_WEIGHTS.recovery) return 'recovery';
+	return 'branch';
+}
+
 const instanceBlueprints = [
 	{
-		slug: 'atlas',
-		name: 'Atlas',
-		host: '10.10.1.10',
-		environment: 'development',
-		os: 'ubuntu-24.04',
-		arch: 'x86_64',
-		zeroclawVersion: '0.4.2',
-		modelDefault: 'claude-3-7-sonnet',
-		isPinned: true,
-		tags: ['main', 'orchestrator', 'dev']
-	},
-	{
-		slug: 'sable',
-		name: 'Sable',
-		host: '10.10.1.11',
-		environment: 'production',
-		os: 'ubuntu-24.04',
-		arch: 'x86_64',
-		zeroclawVersion: '0.4.2',
-		modelDefault: 'claude-3-7-sonnet',
-		isPinned: true,
-		tags: ['archive', 'prod']
-	},
-	{
-		slug: 'rune',
-		name: 'Rune',
-		host: '10.10.1.12',
-		environment: 'staging',
-		os: 'ubuntu-24.04',
-		arch: 'arm64',
-		zeroclawVersion: '0.4.2',
-		modelDefault: 'claude-3-5-haiku',
-		isPinned: false,
-		tags: ['integration', 'staging']
-	},
-	{
-		slug: 'meridian',
-		name: 'Meridian',
-		host: '10.10.1.13',
-		environment: 'production',
-		os: 'debian-12',
-		arch: 'x86_64',
-		zeroclawVersion: '0.4.1',
-		modelDefault: 'claude-3-7-sonnet',
-		isPinned: false,
-		tags: ['analytics', 'prod']
-	},
-	{
-		slug: 'quill',
-		name: 'Quill',
-		host: '10.10.1.14',
+		slug: 'local-dev',
+		name: 'Local Dev',
+		host: '127.0.0.1',
 		environment: 'development',
 		os: 'macos-15',
 		arch: 'arm64',
 		zeroclawVersion: '0.4.2',
-		modelDefault: 'gpt-5-mini',
-		isPinned: false,
-		tags: ['local', 'ux']
+		modelDefault: 'claude-sonnet-4-6',
+		isPinned: true,
+		tags: ['laptop', 'dev', 'local']
 	},
 	{
-		slug: 'ember',
-		name: 'Ember',
-		host: '10.10.1.15',
-		environment: 'staging',
-		os: 'ubuntu-24.04',
-		arch: 'x86_64',
-		zeroclawVersion: '0.4.1',
-		modelDefault: 'claude-3-5-haiku',
-		isPinned: false,
-		tags: ['watcher', 'alerts']
-	},
-	{
-		slug: 'vector',
-		name: 'Vector',
-		host: '10.10.1.16',
+		slug: 'hetzner-vps',
+		name: 'Hetzner VPS',
+		host: '65.21.14.88',
 		environment: 'production',
 		os: 'ubuntu-24.04',
 		arch: 'x86_64',
+		zeroclawVersion: '0.4.1',
+		modelDefault: 'claude-sonnet-4-6',
+		isPinned: true,
+		tags: ['prod', 'vps', 'hetzner']
+	},
+	{
+		slug: 'ci-runner',
+		name: 'CI Runner',
+		host: 'github-actions.runner',
+		environment: 'staging',
+		os: 'ubuntu-24.04',
+		arch: 'x86_64',
 		zeroclawVersion: '0.4.2',
-		modelDefault: 'gpt-5-mini',
+		modelDefault: 'claude-haiku-4-5',
 		isPinned: false,
-		tags: ['cost', 'reporting']
+		tags: ['ci', 'github', 'automation']
 	}
 ];
 
-const templateBlueprints = [
-	rootHeavyBlueprint({
-		slug: 'create_observer_crate',
-		title: 'Create observer crate in zeroclaw',
-		description: 'Add crates/observer with fire-and-forget HTTP emitter.',
+// High-level task templates — what the agent is trying to accomplish
+const taskTemplates = [
+	{
+		slug: 'implement_user_auth',
+		title: 'Implement user auth flow',
+		description: 'Add JWT-based auth with login and signup endpoints.',
 		type: 'code',
 		priority: 'high',
-		technologies: ['rust', 'tokio', 'neo4j'],
-		tags: ['observer', 'instrumentation'],
-		contextPath: '/workspace/Cargo.toml',
-		baseAction: {
-			stepName: 'write observer library',
-			toolName: 'write_file',
-			type: 'file_write',
-			filePath: '/workspace/crates/observer/src/lib.rs'
-		},
-		recoveryAction: {
-			stepName: 'stabilize observer library',
-			toolName: 'write_file',
-			type: 'file_write',
-			filePath: '/workspace/crates/observer/src/lib.rs'
-		},
-		verifyAction: {
-			stepName: 'build observer crate',
-			command: 'cargo build -p observer'
-		}
-	}),
-	rootHeavyBlueprint({
-		slug: 'capture_action_events',
-		title: 'Capture action events across tool paths',
-		description: 'Instrument bash, file writes and LLM calls with ActionEvent payloads.',
+		technologies: ['typescript', 'fastify', 'prisma'],
+		tags: ['auth', 'backend']
+	},
+	{
+		slug: 'setup_db_migrations',
+		title: 'Setup database migrations',
+		description: 'Create and apply Prisma migrations for new schema changes.',
 		type: 'code',
 		priority: 'high',
-		technologies: ['rust', 'serde', 'http'],
-		tags: ['telemetry', 'events'],
-		contextPath: '/workspace/crates/agent/src/tool_executor.rs',
-		baseAction: {
-			stepName: 'wire event emitters',
-			toolName: 'write_file',
-			type: 'file_write',
-			filePath: '/workspace/crates/observer/src/emitter.rs'
-		},
-		recoveryAction: {
-			stepName: 'patch retry semantics',
-			toolName: 'write_file',
-			type: 'file_write',
-			filePath: '/workspace/crates/observer/src/emitter.rs'
-		},
-		verifyAction: {
-			stepName: 'run cargo test observer',
-			command: 'cargo test -p observer'
-		}
-	}),
-	rootHeavyBlueprint({
-		slug: 'ship_fastapi_instance_endpoints',
-		title: 'Ship FastAPI instance registration endpoints',
-		description: 'Implement POST /instances and PATCH /instances/{id}/heartbeat.',
+		technologies: ['prisma', 'postgresql'],
+		tags: ['database', 'migration']
+	},
+	{
+		slug: 'deploy_docker_service',
+		title: 'Deploy Docker service',
+		description: 'Pull, stop, re-run, and health-check the production container.',
+		type: 'shell',
+		priority: 'high',
+		technologies: ['docker', 'nginx', 'systemd'],
+		tags: ['deploy', 'infra']
+	},
+	{
+		slug: 'run_test_suite',
+		title: 'Run full test suite',
+		description: 'Install deps, execute all tests, generate coverage report.',
+		type: 'code',
+		priority: 'medium',
+		technologies: ['vitest', 'playwright', 'typescript'],
+		tags: ['testing', 'ci']
+	},
+	{
+		slug: 'analyze_bundle_size',
+		title: 'Analyze bundle size',
+		description: 'Build production bundle, profile size, log optimization notes.',
+		type: 'code',
+		priority: 'medium',
+		technologies: ['vite', 'rollup', 'typescript'],
+		tags: ['performance', 'frontend']
+	},
+	{
+		slug: 'fix_type_errors',
+		title: 'Fix TypeScript errors',
+		description: 'Run tsc, locate type errors, apply fixes, verify clean build.',
 		type: 'code',
 		priority: 'high',
-		technologies: ['python', 'fastapi', 'pydantic'],
-		tags: ['backend', 'instances'],
-		contextPath: '/workspace/backend/app/api/router.py',
-		baseAction: {
-			stepName: 'write instance endpoints',
-			toolName: 'write_file',
-			type: 'file_write',
-			filePath: '/workspace/backend/app/api/instances.py'
-		},
-		recoveryAction: {
-			stepName: 'adjust heartbeat validation',
-			toolName: 'write_file',
-			type: 'file_write',
-			filePath: '/workspace/backend/app/api/instances.py'
-		},
-		verifyAction: {
-			stepName: 'run pytest instances',
-			command: 'pytest backend/tests/test_instances.py'
-		}
-	}),
-	rootHeavyBlueprint({
-		slug: 'merge_task_runs_into_dag',
-		title: 'Merge task runs into the DAG',
-		description: 'Deduplicate steps into StepNodes and update STEP_SEQUENCE edges.',
-		type: 'code',
-		priority: 'high',
-		technologies: ['python', 'neo4j', 'cypher'],
-		tags: ['dag', 'graph'],
-		contextPath: '/workspace/backend/app/graph/merge.py',
-		baseAction: {
-			stepName: 'implement step merge query',
-			toolName: 'write_file',
-			type: 'file_write',
-			filePath: '/workspace/backend/app/graph/merge.py'
-		},
-		recoveryAction: {
-			stepName: 'repair edge aggregation',
-			toolName: 'write_file',
-			type: 'file_write',
-			filePath: '/workspace/backend/app/graph/merge.py'
-		},
-		verifyAction: {
-			stepName: 'run dag merge tests',
-			command: 'pytest backend/tests/test_dag_merge.py'
-		}
-	}),
-	rootHeavyBlueprint({
-		slug: 'visualize_template_dag',
-		title: 'Visualize a task template DAG',
-		description: 'Render weighted step paths and drilldowns for a template.',
-		type: 'ui',
-		priority: 'medium',
-		technologies: ['svelte', 'cytoscape', 'typescript'],
-		tags: ['frontend', 'dag'],
-		contextPath: '/workspace/frontend/src/lib/components/TaskGraph.svelte',
-		baseAction: {
-			stepName: 'wire cytoscape canvas',
-			toolName: 'write_file',
-			type: 'file_write',
-			filePath: '/workspace/frontend/src/lib/components/TaskGraph.svelte'
-		},
-		recoveryAction: {
-			stepName: 'tune graph layout spacing',
-			toolName: 'write_file',
-			type: 'file_write',
-			filePath: '/workspace/frontend/src/lib/components/TaskGraph.svelte'
-		},
-		verifyAction: {
-			stepName: 'run svelte check graph',
-			command: 'pnpm check'
-		}
-	}),
-	rootHeavyBlueprint({
-		slug: 'audit_risk_scoring',
-		title: 'Audit dangerous commands and risk scoring',
-		description: 'Score actions by permission level and flag dangerous shell commands.',
-		type: 'analysis',
-		priority: 'medium',
-		technologies: ['python', 'rules', 'analytics'],
-		tags: ['risk', 'audit'],
-		contextPath: '/workspace/backend/app/risk/rules.py',
-		baseAction: {
-			stepName: 'update scoring thresholds',
-			toolName: 'write_file',
-			type: 'file_write',
-			filePath: '/workspace/backend/app/risk/rules.py'
-		},
-		recoveryAction: {
-			stepName: 'flag sudo restart path',
-			toolName: 'write_file',
-			type: 'file_write',
-			filePath: '/workspace/backend/app/risk/rules.py'
-		},
-		verifyAction: {
-			stepName: 'run audit validation',
-			command: 'pytest backend/tests/test_risk_scoring.py'
-		}
-	}),
-	rootHeavyBlueprint({
-		slug: 'analyze_cost_breakdown',
-		title: 'Analyze cost breakdown by tool and task',
-		description: 'Aggregate token burn and spend across sessions.',
-		type: 'data',
-		priority: 'medium',
-		technologies: ['python', 'sql', 'analytics'],
-		tags: ['cost', 'tokens'],
-		contextPath: '/workspace/backend/app/analytics/costs.py',
-		baseAction: {
-			stepName: 'plan aggregation query',
-			toolName: 'llm_plan',
-			type: 'llm_call'
-		},
-		recoveryAction: {
-			stepName: 'implement cost views',
-			toolName: 'write_file',
-			type: 'file_write',
-			filePath: '/workspace/backend/app/analytics/costs.py'
-		},
-		verifyAction: {
-			stepName: 'run usage snapshot',
-			command: 'python -m backend.analytics.snapshot'
-		}
-	}),
-	rootHeavyBlueprint({
-		slug: 'stream_weekly_instance_usage',
-		title: 'Stream weekly instance usage to the dashboard',
-		description: 'Compute 7-day summaries for each tracked agent instance.',
-		type: 'backend',
-		priority: 'medium',
-		technologies: ['python', 'neo4j', 'react'],
-		tags: ['instances', 'usage'],
-		contextPath: '/workspace/backend/app/analytics/weekly_usage.py',
-		baseAction: {
-			stepName: 'write weekly usage endpoint',
-			toolName: 'write_file',
-			type: 'file_write',
-			filePath: '/workspace/backend/app/api/usage.py'
-		},
-		recoveryAction: {
-			stepName: 'backfill missing idle states',
-			toolName: 'write_file',
-			type: 'file_write',
-			filePath: '/workspace/backend/app/api/usage.py'
-		},
-		verifyAction: {
-			stepName: 'run weekly usage smoke test',
-			command: 'pytest backend/tests/test_usage.py'
-		}
-	})
+		technologies: ['typescript'],
+		tags: ['bugfix', 'types']
+	}
 ];
 
-function step(stepName, toolName, type, overrides = {}) {
-	return {
-		stepName,
-		toolName,
-		type,
-		command: overrides.command ?? null,
-		filePath: overrides.filePath ?? null,
-		isRecovery: overrides.isRecovery ?? false
-	};
-}
-
-function rootContextStep(contextPath) {
-	return step(SHARED_ENTRY_STEP_NAME, 'read_file', 'file_read', {
-		filePath: contextPath ?? SHARED_ENTRY_FILE_PATH
-	});
-}
-
-function rootHeavyBlueprint({
-	slug,
-	title,
-	description,
-	type,
-	priority,
-	technologies,
-	tags,
-	contextPath,
-	baseAction,
-	recoveryAction,
-	verifyAction
-}) {
-	return {
-		slug,
-		title,
-		description,
-		type,
-		priority,
-		technologies,
-		tags,
-		baseSteps: [rootContextStep(contextPath), stepFromAction(baseAction)],
-		branchSteps: [
-			stepFromAction({ ...recoveryAction, isRecovery: true }),
-			step(verifyAction.stepName, 'bash', 'shell', {
-				command: verifyAction.command,
-				isRecovery: true
-			})
+/**
+ * Per-template path definitions.
+ * Each template has 4 path variants with different numbers of intermediate steps
+ * so each task's action graph has a distinct shape.
+ *
+ * Step fields:
+ *   type        – file_read | file_write | shell | tool_use
+ *   toolName    – read_file | write_file | bash | grep
+ *   stepName    – human-readable label (used as graph node label)
+ *   filePath    – for file ops (optional)
+ *   command     – for shell ops (optional)
+ *   fails       – true → action status = 'failed'
+ *   isRecovery  – true → action is part of the recovery branch
+ */
+const TEMPLATE_PATHS = {
+	implement_user_auth: {
+		// 3 intermediates → 5 nodes total (entry + 3 + last-fail)
+		failure: [
+			{ type: 'file_read',  toolName: 'read_file',   stepName: 'read config',      filePath: '/workspace/src/config.ts' },
+			{ type: 'file_write', toolName: 'write_file',  stepName: 'write auth module', filePath: '/workspace/src/auth/index.ts' },
+			{ type: 'shell',      toolName: 'bash',        stepName: 'run tests',         command: 'pnpm test', fails: true }
+		],
+		// 5 intermediates → 7 nodes total
+		successA: [
+			{ type: 'shell',      toolName: 'bash',        stepName: 'bootstrap env',          command: 'pnpm install' },
+			{ type: 'file_read',  toolName: 'read_file',   stepName: 'read prisma schema',     filePath: '/workspace/prisma/schema.prisma' },
+			{ type: 'file_write', toolName: 'write_file',  stepName: 'write JWT handler',      filePath: '/workspace/src/auth/jwt.ts' },
+			{ type: 'file_write', toolName: 'write_file',  stepName: 'write auth middleware',  filePath: '/workspace/src/middleware/auth.ts' },
+			{ type: 'shell',      toolName: 'bash',        stepName: 'run unit tests',         command: 'pnpm test:unit' },
+			{ type: 'shell',      toolName: 'bash',        stepName: 'run integration tests',  command: 'pnpm test:integration' }
+		],
+		// 4 intermediates → 6 nodes total
+		successB: [
+			{ type: 'tool_use',   toolName: 'grep',        stepName: 'search auth patterns' },
+			{ type: 'file_read',  toolName: 'read_file',   stepName: 'read existing auth',    filePath: '/workspace/src/auth/index.ts' },
+			{ type: 'file_write', toolName: 'write_file',  stepName: 'write changes',          filePath: '/workspace/src/auth/index.ts' },
+			{ type: 'file_read',  toolName: 'read_file',   stepName: 'verify diff',            filePath: '/workspace/src/auth/index.ts' },
+			{ type: 'shell',      toolName: 'bash',        stepName: 'run tests',              command: 'pnpm test' }
+		],
+		// recovery: 6 normal + 1 fail + 2 recovery → 10 nodes total (entry + 9)
+		recovery: [
+			{ type: 'shell',      toolName: 'bash',        stepName: 'bootstrap env',          command: 'pnpm install' },
+			{ type: 'file_read',  toolName: 'read_file',   stepName: 'read prisma schema',     filePath: '/workspace/prisma/schema.prisma' },
+			{ type: 'file_write', toolName: 'write_file',  stepName: 'write JWT handler',      filePath: '/workspace/src/auth/jwt.ts' },
+			{ type: 'shell',      toolName: 'bash',        stepName: 'run unit tests',         command: 'pnpm test:unit', fails: true },
+			{ type: 'file_write', toolName: 'write_file',  stepName: 'fix test setup',         filePath: '/workspace/src/auth/__tests__/setup.ts', isRecovery: true },
+			{ type: 'shell',      toolName: 'bash',        stepName: 'run unit tests',         command: 'pnpm test:unit' },
+			{ type: 'shell',      toolName: 'bash',        stepName: 'verify integration',     command: 'pnpm test:integration' }
+		],
+		branch: [
+			{ type: 'shell',      toolName: 'bash',       stepName: 'bootstrap env',        command: 'pnpm install' },
+			[
+				{ type: 'file_read',  toolName: 'read_file',  stepName: 'read prisma schema',   filePath: '/workspace/prisma/schema.prisma' },
+				{ type: 'file_read',  toolName: 'read_file',  stepName: 'read existing auth',   filePath: '/workspace/src/auth/index.ts' },
+			],
+			{ type: 'file_write', toolName: 'write_file', stepName: 'write JWT handler',    filePath: '/workspace/src/auth/jwt.ts' },
+			[
+				{ type: 'file_write', toolName: 'write_file', stepName: 'write auth middleware', filePath: '/workspace/src/middleware/auth.ts' },
+				{ type: 'file_write', toolName: 'write_file', stepName: 'write auth routes',    filePath: '/workspace/src/routes/auth.ts' },
+			],
+			{ type: 'shell',      toolName: 'bash',       stepName: 'run test suite',       command: 'pnpm test' },
 		]
-	};
+	},
+
+	setup_db_migrations: {
+		// 3 intermediates → 5 nodes
+		failure: [
+			{ type: 'file_read',  toolName: 'read_file',   stepName: 'read schema',           filePath: '/workspace/prisma/schema.prisma' },
+			{ type: 'file_write', toolName: 'write_file',  stepName: 'write migration file',  filePath: '/workspace/prisma/migrations/001_init.sql' },
+			{ type: 'shell',      toolName: 'bash',        stepName: 'run migration',          command: 'pnpm prisma migrate dev', fails: true }
+		],
+		// 4 intermediates → 6 nodes
+		successA: [
+			{ type: 'file_read',  toolName: 'read_file',   stepName: 'read schema',           filePath: '/workspace/prisma/schema.prisma' },
+			{ type: 'shell',      toolName: 'bash',        stepName: 'check db version',      command: 'pnpm prisma version' },
+			{ type: 'file_write', toolName: 'write_file',  stepName: 'write migration file',  filePath: '/workspace/prisma/migrations/001_init.sql' },
+			{ type: 'shell',      toolName: 'bash',        stepName: 'run migration',          command: 'pnpm prisma migrate dev' },
+			{ type: 'shell',      toolName: 'bash',        stepName: 'verify schema',          command: 'pnpm prisma db pull' }
+		],
+		// 6 intermediates → 8 nodes
+		successB: [
+			{ type: 'file_read',  toolName: 'read_file',   stepName: 'read schema',           filePath: '/workspace/prisma/schema.prisma' },
+			{ type: 'tool_use',   toolName: 'grep',        stepName: 'search existing models' },
+			{ type: 'shell',      toolName: 'bash',        stepName: 'check db version',      command: 'pnpm prisma version' },
+			{ type: 'file_write', toolName: 'write_file',  stepName: 'write migration file',  filePath: '/workspace/prisma/migrations/001_init.sql' },
+			{ type: 'file_read',  toolName: 'read_file',   stepName: 'verify migration sql',  filePath: '/workspace/prisma/migrations/001_init.sql' },
+			{ type: 'shell',      toolName: 'bash',        stepName: 'run migration',          command: 'pnpm prisma migrate dev' },
+			{ type: 'shell',      toolName: 'bash',        stepName: 'verify schema',          command: 'pnpm prisma db pull' }
+		],
+		// recovery: fail on migration, recover by fixing sql → 9 nodes
+		recovery: [
+			{ type: 'file_read',  toolName: 'read_file',   stepName: 'read schema',           filePath: '/workspace/prisma/schema.prisma' },
+			{ type: 'shell',      toolName: 'bash',        stepName: 'check db version',      command: 'pnpm prisma version' },
+			{ type: 'file_write', toolName: 'write_file',  stepName: 'write migration file',  filePath: '/workspace/prisma/migrations/001_init.sql' },
+			{ type: 'shell',      toolName: 'bash',        stepName: 'run migration',          command: 'pnpm prisma migrate dev', fails: true },
+			{ type: 'file_read',  toolName: 'read_file',   stepName: 'read error logs',        filePath: '/workspace/prisma/migrations/migration_lock.toml', isRecovery: true },
+			{ type: 'file_write', toolName: 'write_file',  stepName: 'fix migration script',   filePath: '/workspace/prisma/migrations/001_init.sql' },
+			{ type: 'shell',      toolName: 'bash',        stepName: 'run migration',          command: 'pnpm prisma migrate dev' },
+			{ type: 'shell',      toolName: 'bash',        stepName: 'verify schema',          command: 'pnpm prisma db pull' }
+		],
+		branch: [
+			[
+				{ type: 'file_read',  toolName: 'read_file', stepName: 'read schema',       filePath: '/workspace/prisma/schema.prisma' },
+				{ type: 'shell',      toolName: 'bash',      stepName: 'check db version',  command: 'pnpm prisma version' },
+			],
+			{ type: 'file_write', toolName: 'write_file', stepName: 'write migration file', filePath: '/workspace/prisma/migrations/001_init.sql' },
+			{ type: 'shell',      toolName: 'bash',       stepName: 'run migration',        command: 'pnpm prisma migrate dev' },
+			[
+				{ type: 'shell',      toolName: 'bash',      stepName: 'verify schema',     command: 'pnpm prisma db pull' },
+				{ type: 'tool_use',   toolName: 'grep',      stepName: 'grep migration log' },
+			],
+		]
+	},
+
+	deploy_docker_service: {
+		// 3 intermediates → 5 nodes (risky: admin perms)
+		failure: [
+			{ type: 'shell', toolName: 'bash', stepName: 'pull docker image',  command: 'docker pull app:latest' },
+			{ type: 'shell', toolName: 'bash', stepName: 'stop old container', command: 'docker stop app', permission: 'admin' },
+			{ type: 'shell', toolName: 'bash', stepName: 'start new container',command: 'docker run -d app:latest', permission: 'admin', fails: true }
+		],
+		// 5 intermediates → 7 nodes
+		successA: [
+			{ type: 'shell', toolName: 'bash', stepName: 'pull docker image',   command: 'docker pull app:latest' },
+			{ type: 'shell', toolName: 'bash', stepName: 'stop old container',  command: 'docker stop app', permission: 'admin' },
+			{ type: 'shell', toolName: 'bash', stepName: 'start new container', command: 'docker run -d app:latest', permission: 'admin' },
+			{ type: 'shell', toolName: 'bash', stepName: 'health check',        command: 'curl -f http://localhost:8000/health' },
+			{ type: 'shell', toolName: 'bash', stepName: 'reload nginx',        command: 'sudo nginx -s reload', permission: 'admin' },
+			{ type: 'shell', toolName: 'bash', stepName: 'tail deploy logs',    command: 'docker logs app --tail 50' }
+		],
+		// 4 intermediates → 6 nodes
+		successB: [
+			{ type: 'shell', toolName: 'bash', stepName: 'pull docker image',   command: 'docker pull app:latest' },
+			{ type: 'shell', toolName: 'bash', stepName: 'stop old container',  command: 'docker stop app', permission: 'admin' },
+			{ type: 'shell', toolName: 'bash', stepName: 'start new container', command: 'docker run -d app:latest', permission: 'admin' },
+			{ type: 'shell', toolName: 'bash', stepName: 'health check',        command: 'curl -f http://localhost:8000/health' },
+			{ type: 'shell', toolName: 'bash', stepName: 'tail deploy logs',    command: 'docker logs app --tail 50' }
+		],
+		// recovery: container fails to start, recover by checking port conflict → 8 nodes
+		recovery: [
+			{ type: 'shell',      toolName: 'bash',       stepName: 'pull docker image',   command: 'docker pull app:latest' },
+			{ type: 'shell',      toolName: 'bash',       stepName: 'stop old container',  command: 'docker stop app', permission: 'admin' },
+			{ type: 'shell',      toolName: 'bash',       stepName: 'start new container', command: 'docker run -d app:latest', permission: 'admin', fails: true },
+			{ type: 'shell',      toolName: 'bash',       stepName: 'check port conflict', command: 'lsof -i :8000', isRecovery: true },
+			{ type: 'shell',      toolName: 'bash',       stepName: 'kill blocking process', command: 'kill -9 $(lsof -ti :8000)', permission: 'admin' },
+			{ type: 'shell',      toolName: 'bash',       stepName: 'start new container', command: 'docker run -d app:latest', permission: 'admin' },
+			{ type: 'shell',      toolName: 'bash',       stepName: 'health check',        command: 'curl -f http://localhost:8000/health' }
+		],
+		branch: [
+			{ type: 'shell', toolName: 'bash', stepName: 'pull docker image', command: 'docker pull app:latest' },
+			[
+				{ type: 'shell', toolName: 'bash', stepName: 'stop old container',     command: 'docker stop app', permission: 'admin' },
+				{ type: 'shell', toolName: 'bash', stepName: 'check port availability', command: 'lsof -i :8000' },
+			],
+			{ type: 'shell', toolName: 'bash', stepName: 'start new container', command: 'docker run -d app:latest', permission: 'admin' },
+			[
+				{ type: 'shell', toolName: 'bash', stepName: 'health check', command: 'curl -f http://localhost:8000/health' },
+				{ type: 'shell', toolName: 'bash', stepName: 'reload nginx',  command: 'sudo nginx -s reload', permission: 'admin' },
+			],
+		]
+	},
+
+	run_test_suite: {
+		// 3 intermediates → 5 nodes
+		failure: [
+			{ type: 'file_read', toolName: 'read_file', stepName: 'read test config',     filePath: '/workspace/vitest.config.ts' },
+			{ type: 'shell',     toolName: 'bash',      stepName: 'install dependencies', command: 'pnpm install' },
+			{ type: 'shell',     toolName: 'bash',      stepName: 'run test suite',       command: 'pnpm test', fails: true }
+		],
+		// 3 intermediates → 5 nodes
+		successA: [
+			{ type: 'file_read', toolName: 'read_file', stepName: 'read test config',       filePath: '/workspace/vitest.config.ts' },
+			{ type: 'shell',     toolName: 'bash',      stepName: 'install dependencies',   command: 'pnpm install' },
+			{ type: 'shell',     toolName: 'bash',      stepName: 'run test suite',         command: 'pnpm test' },
+			{ type: 'shell',     toolName: 'bash',      stepName: 'generate coverage report', command: 'pnpm test --coverage' }
+		],
+		// 5 intermediates → 7 nodes
+		successB: [
+			{ type: 'file_read',  toolName: 'read_file', stepName: 'read test config',       filePath: '/workspace/vitest.config.ts' },
+			{ type: 'tool_use',   toolName: 'grep',      stepName: 'find test files' },
+			{ type: 'shell',      toolName: 'bash',      stepName: 'install dependencies',   command: 'pnpm install' },
+			{ type: 'shell',      toolName: 'bash',      stepName: 'run unit tests',         command: 'pnpm test:unit' },
+			{ type: 'shell',      toolName: 'bash',      stepName: 'run e2e tests',          command: 'pnpm test:e2e' },
+			{ type: 'shell',      toolName: 'bash',      stepName: 'generate coverage report', command: 'pnpm test --coverage' }
+		],
+		// recovery: unit tests fail, fix + retry → 9 nodes
+		recovery: [
+			{ type: 'file_read',  toolName: 'read_file', stepName: 'read test config',       filePath: '/workspace/vitest.config.ts' },
+			{ type: 'tool_use',   toolName: 'grep',      stepName: 'find test files' },
+			{ type: 'shell',      toolName: 'bash',      stepName: 'install dependencies',   command: 'pnpm install' },
+			{ type: 'shell',      toolName: 'bash',      stepName: 'run test suite',         command: 'pnpm test', fails: true },
+			{ type: 'file_read',  toolName: 'read_file', stepName: 'read test output',       filePath: '/workspace/test-results/output.txt', isRecovery: true },
+			{ type: 'file_write', toolName: 'write_file', stepName: 'fix failing test',      filePath: '/workspace/src/__tests__/auth.test.ts' },
+			{ type: 'shell',      toolName: 'bash',      stepName: 'run test suite',         command: 'pnpm test' },
+			{ type: 'shell',      toolName: 'bash',      stepName: 'generate coverage report', command: 'pnpm test --coverage' }
+		],
+		branch: [
+			{ type: 'file_read', toolName: 'read_file', stepName: 'read test config',     filePath: '/workspace/vitest.config.ts' },
+			{ type: 'shell',     toolName: 'bash',      stepName: 'install dependencies', command: 'pnpm install' },
+			[
+				{ type: 'shell', toolName: 'bash', stepName: 'run unit tests', command: 'pnpm test:unit' },
+				{ type: 'shell', toolName: 'bash', stepName: 'run e2e tests',  command: 'pnpm test:e2e' },
+			],
+			{ type: 'shell', toolName: 'bash', stepName: 'generate coverage report', command: 'pnpm test --coverage' },
+		]
+	},
+
+	analyze_bundle_size: {
+		// 3 intermediates → 5 nodes
+		failure: [
+			{ type: 'shell',      toolName: 'bash',      stepName: 'build production bundle', command: 'pnpm build' },
+			{ type: 'shell',      toolName: 'bash',      stepName: 'run bundle analyzer',     command: 'pnpm analyze', fails: true },
+			{ type: 'file_read',  toolName: 'read_file', stepName: 'read partial report',     filePath: '/workspace/dist/stats.json' }
+		],
+		// 4 intermediates → 6 nodes
+		successA: [
+			{ type: 'shell',      toolName: 'bash',      stepName: 'build production bundle',  command: 'pnpm build' },
+			{ type: 'shell',      toolName: 'bash',      stepName: 'run bundle analyzer',      command: 'pnpm analyze' },
+			{ type: 'file_read',  toolName: 'read_file', stepName: 'read analysis report',     filePath: '/workspace/dist/stats.json' },
+			{ type: 'file_write', toolName: 'write_file', stepName: 'write optimization notes', filePath: '/workspace/docs/bundle-notes.md' },
+			{ type: 'shell',      toolName: 'bash',      stepName: 'compare with baseline',    command: 'pnpm bundle-compare' }
+		],
+		// 5 intermediates → 7 nodes
+		successB: [
+			{ type: 'shell',      toolName: 'bash',      stepName: 'build production bundle',  command: 'pnpm build' },
+			{ type: 'shell',      toolName: 'bash',      stepName: 'run bundle analyzer',      command: 'pnpm analyze' },
+			{ type: 'tool_use',   toolName: 'grep',      stepName: 'search large dependencies' },
+			{ type: 'file_read',  toolName: 'read_file', stepName: 'read analysis report',     filePath: '/workspace/dist/stats.json' },
+			{ type: 'file_write', toolName: 'write_file', stepName: 'write optimization notes', filePath: '/workspace/docs/bundle-notes.md' },
+			{ type: 'shell',      toolName: 'bash',      stepName: 'compare with baseline',    command: 'pnpm bundle-compare' }
+		],
+		// recovery: analyzer fails, rebuild and retry → 8 nodes
+		recovery: [
+			{ type: 'shell',      toolName: 'bash',      stepName: 'build production bundle',  command: 'pnpm build' },
+			{ type: 'shell',      toolName: 'bash',      stepName: 'run bundle analyzer',      command: 'pnpm analyze', fails: true },
+			{ type: 'file_read',  toolName: 'read_file', stepName: 'read build log',           filePath: '/workspace/.vite/build-log.txt', isRecovery: true },
+			{ type: 'file_write', toolName: 'write_file', stepName: 'fix vite config',         filePath: '/workspace/vite.config.ts' },
+			{ type: 'shell',      toolName: 'bash',      stepName: 'build production bundle',  command: 'pnpm build' },
+			{ type: 'shell',      toolName: 'bash',      stepName: 'run bundle analyzer',      command: 'pnpm analyze' },
+			{ type: 'file_read',  toolName: 'read_file', stepName: 'read analysis report',     filePath: '/workspace/dist/stats.json' }
+		],
+		branch: [
+			{ type: 'shell', toolName: 'bash', stepName: 'build production bundle', command: 'pnpm build' },
+			[
+				{ type: 'tool_use',  toolName: 'grep',      stepName: 'grep large dependencies' },
+				{ type: 'file_read', toolName: 'read_file', stepName: 'read analysis report', filePath: '/workspace/dist/stats.json' },
+			],
+			{ type: 'file_write', toolName: 'write_file', stepName: 'write optimization notes', filePath: '/workspace/docs/bundle-notes.md' },
+			{ type: 'shell',      toolName: 'bash',       stepName: 'compare with baseline',   command: 'pnpm bundle-compare' },
+		]
+	},
+
+	fix_type_errors: {
+		// 3 intermediates → 5 nodes
+		failure: [
+			{ type: 'shell',      toolName: 'bash',      stepName: 'run tsc check',           command: 'pnpm tsc --noEmit' },
+			{ type: 'tool_use',   toolName: 'grep',      stepName: 'find error locations' },
+			{ type: 'shell',      toolName: 'bash',      stepName: 'verify tsc clean',        command: 'pnpm tsc --noEmit', fails: true }
+		],
+		// 4 intermediates → 6 nodes
+		successA: [
+			{ type: 'shell',      toolName: 'bash',      stepName: 'run tsc check',           command: 'pnpm tsc --noEmit' },
+			{ type: 'tool_use',   toolName: 'grep',      stepName: 'find error locations' },
+			{ type: 'file_read',  toolName: 'read_file', stepName: 'read file with errors',   filePath: '/workspace/src/types/index.ts' },
+			{ type: 'file_write', toolName: 'write_file', stepName: 'apply type fixes',       filePath: '/workspace/src/types/index.ts' },
+			{ type: 'shell',      toolName: 'bash',      stepName: 'verify tsc clean',        command: 'pnpm tsc --noEmit' }
+		],
+		// 6 intermediates → 8 nodes
+		successB: [
+			{ type: 'shell',      toolName: 'bash',      stepName: 'run tsc check',           command: 'pnpm tsc --noEmit' },
+			{ type: 'tool_use',   toolName: 'grep',      stepName: 'find error locations' },
+			{ type: 'file_read',  toolName: 'read_file', stepName: 'read file with errors',   filePath: '/workspace/src/types/index.ts' },
+			{ type: 'file_write', toolName: 'write_file', stepName: 'apply type fixes',       filePath: '/workspace/src/types/index.ts' },
+			{ type: 'file_read',  toolName: 'read_file', stepName: 'read related types',      filePath: '/workspace/src/types/api.ts' },
+			{ type: 'file_write', toolName: 'write_file', stepName: 'fix related types',      filePath: '/workspace/src/types/api.ts' },
+			{ type: 'shell',      toolName: 'bash',      stepName: 'verify tsc clean',        command: 'pnpm tsc --noEmit' }
+		],
+		// recovery: first fix attempt fails tsc, deeper fix needed → 8 nodes
+		recovery: [
+			{ type: 'shell',      toolName: 'bash',      stepName: 'run tsc check',           command: 'pnpm tsc --noEmit' },
+			{ type: 'tool_use',   toolName: 'grep',      stepName: 'find error locations' },
+			{ type: 'file_read',  toolName: 'read_file', stepName: 'read file with errors',   filePath: '/workspace/src/types/index.ts' },
+			{ type: 'file_write', toolName: 'write_file', stepName: 'apply type fixes',       filePath: '/workspace/src/types/index.ts' },
+			{ type: 'shell',      toolName: 'bash',      stepName: 'verify tsc clean',        command: 'pnpm tsc --noEmit', fails: true },
+			{ type: 'file_read',  toolName: 'read_file', stepName: 'inspect type definitions', filePath: '/workspace/src/types/api.ts', isRecovery: true },
+			{ type: 'file_write', toolName: 'write_file', stepName: 'fix type definitions',   filePath: '/workspace/src/types/api.ts' },
+			{ type: 'shell',      toolName: 'bash',      stepName: 'verify tsc clean',        command: 'pnpm tsc --noEmit' }
+		],
+		branch: [
+			{ type: 'shell',    toolName: 'bash', stepName: 'run tsc check',      command: 'pnpm tsc --noEmit' },
+			{ type: 'tool_use', toolName: 'grep', stepName: 'find error locations' },
+			[
+				{ type: 'file_read', toolName: 'read_file', stepName: 'read types index', filePath: '/workspace/src/types/index.ts' },
+				{ type: 'file_read', toolName: 'read_file', stepName: 'read API types',   filePath: '/workspace/src/types/api.ts' },
+			],
+			{ type: 'file_write', toolName: 'write_file', stepName: 'apply type fixes', filePath: '/workspace/src/types/index.ts' },
+			{ type: 'shell',      toolName: 'bash',       stepName: 'verify tsc clean',  command: 'pnpm tsc --noEmit' },
+		]
+	}
+};
+
+function inferPermission(step) {
+	if (step.permission) return step.permission;
+	if (step.type === 'file_write') return 'write';
+	if (step.type === 'shell') return 'write';
+	return 'read';
 }
 
-function stepFromAction(action) {
-	return step(action.stepName, action.toolName, action.type, {
-		command: action.command,
-		filePath: action.filePath,
-		isRecovery: action.isRecovery
-	});
+function baseRisk(permissionLevel) {
+	if (permissionLevel === 'dangerous') return 0.55;
+	if (permissionLevel === 'admin') return 0.38;
+	if (permissionLevel === 'write') return 0.16;
+	return 0.04;
 }
 
-export function generateObserveGraphMockData(seed = 20260321) {
+function round(value, digits = 0) {
+	const factor = 10 ** digits;
+	return Math.round(value * factor) / factor;
+}
+
+function sampleActionTokens(rng, type, index) {
+	if (index === 0) return between(rng, 350, 800); // entry step
+	if (type === 'shell') return between(rng, 140, 580);
+	if (type === 'file_write') return between(rng, 300, 1200);
+	if (type === 'file_read') return between(rng, 80, 420);
+	return between(rng, 80, 320); // tool_use / grep
+}
+
+function fakeStdout(step) {
+	if (step.type === 'shell') {
+		const cmd = step.command ?? '';
+		if (cmd.includes('test')) return 'collected 12 items\n12 passed in 1.43s';
+		if (cmd.includes('build')) return 'vite v5.2.0 building for production...\n✓ built in 3.48s';
+		if (cmd.includes('docker pull')) return 'latest: Pulling from library/app\nDigest: sha256:abc123\nStatus: Image is up to date';
+		if (cmd.includes('docker stop')) return 'app';
+		if (cmd.includes('docker run')) return 'c3d4e5f6a7b8';
+		if (cmd.includes('curl')) return '{"status":"ok","uptime":182}';
+		if (cmd.includes('nginx')) return '';
+		if (cmd.includes('prisma migrate')) return 'The following migration(s) have been applied:\n✓ 001_init';
+		if (cmd.includes('prisma db pull')) return 'Prisma schema updated';
+		if (cmd.includes('tsc')) return '';
+		if (cmd.includes('analyze')) return 'Bundle analysis complete. Total: 312 kB';
+		return 'Command completed successfully';
+	}
+	if (step.type === 'tool_use') return 'Found 8 matching references';
+	return `opened ${step.filePath ?? '/workspace/src/index.ts'}`;
+}
+
+function fakeError(step) {
+	if (step.type === 'shell') {
+		const cmd = step.command ?? '';
+		if (cmd.includes('test')) return 'FAIL src/__tests__/auth.test.ts\n  ✗ should return 401 for invalid token\n  Expected: 401, Received: 500\n1 failed, 11 passed';
+		if (cmd.includes('docker run')) return "Error: driver failed programming external connectivity on endpoint app: Bind for 0.0.0.0:8000 failed: port is already allocated";
+		if (cmd.includes('prisma migrate')) return 'Error: P1001: Can\'t reach database server at localhost:5432\nMigration failed';
+		if (cmd.includes('tsc')) return 'src/types/index.ts(42,7): error TS2322: Type \'string | undefined\' is not assignable to type \'string\'.\n3 errors found.';
+		if (cmd.includes('analyze')) return 'Error: rollup-plugin-visualizer: stats file not found. Run build first.';
+	}
+	return 'Command failed with exit code 1';
+}
+
+function fakeReasoning(step, template) {
+	if (step.isRecovery) return `Recovering from failure — trying alternate approach for ${template.title.toLowerCase()}.`;
+	if (step.type === 'file_write') return `Applying changes for ${template.title.toLowerCase()}.`;
+	if (step.type === 'shell') return `Executing shell step to verify the ${template.type} path.`;
+	return `Inspect state before changing ${template.title.toLowerCase()}.`;
+}
+
+const sessionFocuses = [
+	['feature-auth-system', 'api-refactor'],
+	['morning-deploy', 'hotfix-prod'],
+	['pr-202', 'pr-199']
+];
+
+const sessionBranches = [
+	['feat/auth-system', 'feat/refactor-api'],
+	['main', 'hotfix/prod-fix'],
+	['pr/202-feature', 'pr/199-bugfix']
+];
+
+const sessionTriggers = [
+	['cli', 'cli'],
+	['scheduled', 'api'],
+	['webhook', 'webhook']
+];
+
+const sessionNotes = [
+	['Implementing JWT auth system and API validation', 'Refactoring API layer and optimizing queries'],
+	['Morning production deployment run', 'Emergency hotfix for prod regression'],
+	['Feature PR #202: auth and bundle improvements', 'Bugfix PR #199: type errors and test fixes']
+];
+
+export function generateObserveGraphMockData(seed = 20260322) {
 	const rng = mulberry32(seed);
-	const now = new Date('2026-03-21T16:00:00.000Z');
+	const now = new Date('2026-03-22T16:00:00.000Z');
 
-	const instances = instanceBlueprints.slice(0, INSTANCE_COUNT).map((blueprint, index) => {
-		const registeredAt = new Date(now.getTime() - (7 * 24 - index * 9) * 60 * 60 * 1000);
-		const lastSeenAt = new Date(now.getTime() - between(rng, 30, index === 5 ? 9200 : 600) * 1000);
+	const instances = instanceBlueprints.slice(0, INSTANCE_COUNT).map((bp, index) => {
+		const registeredAt = new Date(now.getTime() - (14 * 24 - index * 24) * 60 * 60 * 1000);
+		const lastSeenAt = new Date(now.getTime() - between(rng, 30, 300) * 1000);
 		const secondsAgo = Math.floor((now.getTime() - lastSeenAt.getTime()) / 1000);
 		const status = secondsAgo > 5400 ? 'offline' : secondsAgo > 1200 ? 'idle' : 'online';
 		return {
-			instanceId: `inst_${blueprint.slug}`,
-			slug: blueprint.slug,
-			name: blueprint.name,
-			host: blueprint.host,
+			instanceId: `inst_${bp.slug}`,
+			slug: bp.slug,
+			name: bp.name,
+			host: bp.host,
 			port: 3000 + index,
-			environment: blueprint.environment,
-			os: blueprint.os,
-			arch: blueprint.arch,
-			zeroclawVersion: blueprint.zeroclawVersion,
-			modelDefault: blueprint.modelDefault,
+			environment: bp.environment,
+			os: bp.os,
+			arch: bp.arch,
+			zeroclawVersion: bp.zeroclawVersion,
+			modelDefault: bp.modelDefault,
 			registeredAt: registeredAt.toISOString(),
 			lastSeenAt: lastSeenAt.toISOString(),
 			status,
-			isPinned: blueprint.isPinned,
-			tags: blueprint.tags
+			isPinned: bp.isPinned,
+			tags: bp.tags
 		};
 	});
 
+	const sessions = [];
 	const tasks = [];
 	const actions = [];
-	const sessions = [];
-	let taskIndex = 0;
+	let taskOrdinal = 0;
 
-	SESSION_TASK_COUNTS.forEach((taskCount, sessionIndex) => {
-		const instance = instances[sessionIndex % instances.length];
-		const sessionStart = new Date(
-			now.getTime() - (sessionIndex * 8 + between(rng, 1, 4)) * 60 * 60 * 1000
-		);
-		const sessionId = `sess_20260321_${String(sessionIndex + 1).padStart(3, '0')}`;
-		const sessionTasks = [];
-		let cursor = sessionStart.getTime();
+	for (let instIdx = 0; instIdx < instances.length; instIdx++) {
+		const instance = instances[instIdx];
+		const templateSlug = instance.slug.replace(/-/g, '_').replace(/^ci_runner$/, 'ci_runner');
 
-		for (let localTaskIndex = 0; localTaskIndex < taskCount; localTaskIndex += 1) {
-			const blueprint = templateBlueprints[taskIndex % templateBlueprints.length];
-			const task = buildTaskRun({
-				rng,
-				now,
-				taskOrdinal: taskIndex + 1,
-				instance,
+		for (let sessIdx = 0; sessIdx < SESSIONS_PER_INSTANCE; sessIdx++) {
+			// Session 0 = yesterday, Session 1 = 2 days ago (both within 7-day window)
+			const daysAgo = sessIdx + 1;
+			const sessionDate = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+			const dateStr = sessionDate.toISOString().slice(0, 10);
+			const focus = sessionFocuses[instIdx][sessIdx];
+			const sessionId = `${instance.slug}-${dateStr}-${focus}`;
+
+			const startHour = instIdx === 0 ? 9 : instIdx === 1 ? 6 : 7;
+			const sessionStart = new Date(
+				sessionDate.getFullYear(), sessionDate.getMonth(), sessionDate.getDate(),
+				startHour + between(rng, 0, 2), between(rng, 0, 59), 0, 0
+			);
+			// Convert to UTC representation
+			const sessionStartMs = sessionStart.getTime() - sessionStart.getTimezoneOffset() * 60000;
+
+			const sessionTasks = [];
+			let cursor = sessionStartMs;
+
+			// 4-5 tasks per session
+			const taskCount = MIN_TASKS_PER_SESSION + (rng() > 0.5 ? 1 : 0);
+			for (let t = 0; t < taskCount; t++) {
+				const template = taskTemplates[taskOrdinal % taskTemplates.length];
+				const pathType = pickPath(rng);
+				const templatePaths = TEMPLATE_PATHS[template.slug];
+				// Fallback to generic if template not in TEMPLATE_PATHS
+				const pathSteps = templatePaths
+					? templatePaths[pathType] ?? templatePaths.successA
+					: [];
+
+				const runId = `run_${String(taskOrdinal + 1).padStart(3, '0')}`;
+				const taskId = `task_${String(taskOrdinal + 1).padStart(3, '0')}`;
+				const templateId = `tmpl_${template.slug}`;
+
+				const runActions = [];
+				const startedAt = new Date(cursor);
+
+				// Entry: load root task context (always first, always success)
+				const entryActionId = `${taskId}_act_01`;
+				const entryDuration = between(rng, 180, 750);
+				const entryEnd = cursor + entryDuration;
+				runActions.push({
+					actionId: entryActionId,
+					parentActionIds: [],
+					sequence: 1,
+					stepName: SHARED_ENTRY_STEP_NAME,
+					toolName: 'read_file',
+					type: 'file_read',
+					filePath: SHARED_ENTRY_FILE_PATH,
+					command: null,
+					status: 'success',
+					startedAt: new Date(cursor),
+					endedAt: new Date(entryEnd),
+					durationMs: entryDuration,
+					totalTokens: sampleActionTokens(rng, 'file_read', 0),
+					latencyMs: entryDuration,
+					costUsd: round(entryDuration * 0.000018, 4),
+					permissionLevel: 'read',
+					riskScore: round(0.04 + rng() * 0.06, 2),
+					isRecovery: false,
+					fails: false
+				});
+				cursor = entryEnd + between(rng, 8, 35) * 1000;
+
+				// Path-specific steps (supports arrays for parallel/branching groups)
+				let currentParentIds = [entryActionId];
+				for (const item of pathSteps) {
+					const group = Array.isArray(item) ? item : [item];
+					const newParentIds = [];
+
+					for (const step of group) {
+						const seq = runActions.length + 1;
+						const actionId = `${taskId}_act_${String(seq).padStart(2, '0')}`;
+						const durationMs = step.type === 'shell'
+							? between(rng, 800, 9500)
+							: step.type === 'file_write'
+								? between(rng, 400, 2800)
+								: between(rng, 120, 1800);
+						const shouldFail = step.fails === true;
+						const status = shouldFail ? 'failed' : 'success';
+						const permissionLevel = inferPermission(step);
+
+						runActions.push({
+							actionId,
+							parentActionIds: [...currentParentIds],
+							sequence: seq,
+							stepName: step.stepName,
+							toolName: step.toolName,
+							type: step.type,
+							filePath: step.filePath ?? null,
+							command: step.command ?? null,
+							status,
+							startedAt: new Date(cursor),
+							endedAt: new Date(cursor + durationMs),
+							durationMs,
+							totalTokens: sampleActionTokens(rng, step.type, seq - 1),
+							latencyMs: durationMs,
+							costUsd: round(durationMs * 0.000014, 4),
+							permissionLevel,
+							riskScore: round(baseRisk(permissionLevel) + rng() * 0.14, 2),
+							isRecovery: step.isRecovery === true,
+							fails: shouldFail
+						});
+						newParentIds.push(actionId);
+						cursor += durationMs + between(rng, 10, 45) * 1000;
+					}
+
+					currentParentIds = newParentIds;
+				}
+
+				// Task status: failed only if last action failed AND no subsequent recovery
+				const lastAction = runActions.at(-1);
+				const taskStatus = lastAction?.status === 'failed' ? 'failed' : 'completed';
+				const completedAt = lastAction?.endedAt ?? startedAt;
+				const lastActionAt = (lastAction?.endedAt ?? startedAt).toISOString();
+
+				const taskActions = runActions.map((ra) => {
+					const stepId = `${templateId}:${slugify(ra.toolName)}:${slugify(ra.stepName)}`;
+					const thinkingTokens = Math.round(ra.totalTokens * 0.18);
+					const outputTokens = ra.totalTokens - thinkingTokens;
+					return {
+						actionId: ra.actionId,
+						parentActionIds: ra.parentActionIds,
+						taskId,
+						instanceId: instance.instanceId,
+						runId,
+						stepId,
+						sequence: ra.sequence,
+						stepName: ra.stepName,
+						type: ra.type,
+						toolName: ra.toolName,
+						command: ra.command,
+						filePath: ra.filePath,
+						fileSizeBytes: null,
+						stdout: ra.status === 'success' ? fakeStdout(ra) : null,
+						stderr: ra.status === 'failed' ? fakeError(ra) : null,
+						exitCode: ra.type === 'shell' ? (ra.status === 'failed' ? 1 : 0) : null,
+						permissionLevel: ra.permissionLevel,
+						riskScore: ra.riskScore,
+						isFlagged: ra.riskScore >= 0.75,
+						flagReason: ra.riskScore >= 0.75 ? 'High-risk admin operation' : null,
+						status: ra.status,
+						startedAt: ra.startedAt.toISOString(),
+						endedAt: ra.endedAt.toISOString(),
+						durationMs: ra.durationMs,
+						reasoning: fakeReasoning(ra, template),
+						thinkingTokens,
+						outputTokens,
+						totalTokens: ra.totalTokens,
+						modelUsed: instance.modelDefault,
+						latencyMs: ra.latencyMs,
+						costUsd: ra.costUsd,
+						retryCount: ra.isRecovery ? 1 : 0,
+						isRecovery: ra.isRecovery
+					};
+				});
+
+				tasks.push({
+					taskId,
+					sessionId,
+					instanceId: instance.instanceId,
+					templateId,
+					runId,
+					title: template.title,
+					description: template.description,
+					type: template.type,
+					technologies: template.technologies,
+					status: taskStatus,
+					priority: template.priority,
+					startedAt: startedAt.toISOString(),
+					completedAt: completedAt.toISOString(),
+					durationMs: completedAt.getTime() - startedAt.getTime(),
+					totalTokens: sum(runActions.map((a) => a.totalTokens)),
+					thinkingTokens: sum(runActions.map((a) => Math.round(a.totalTokens * 0.18))),
+					outputTokens: sum(runActions.map((a) => a.totalTokens - Math.round(a.totalTokens * 0.18))),
+					totalCostUsd: round(sum(runActions.map((a) => a.costUsd)), 4),
+					actionCount: taskActions.length,
+					isBookmarked: rng() > 0.82,
+					rating: taskStatus === 'completed' ? between(rng, 3, 5) : null,
+					tags: template.tags,
+					error: taskStatus === 'failed' ? 'Final step failed — no recovery path taken.' : null,
+					lastActionAt
+				});
+				actions.push(...taskActions);
+				sessionTasks.push(tasks[tasks.length - 1]);
+				taskOrdinal++;
+				cursor = completedAt.getTime() + between(rng, 45, 150) * 1000;
+			}
+
+			const endedAt = new Date(cursor);
+			const sessionStatus = sessionTasks.some((t) => t.status === 'failed') ? 'failed' : 'completed';
+
+			sessions.push({
 				sessionId,
-				blueprint,
-				startMs: cursor
+				instanceId: instance.instanceId,
+				trigger: sessionTriggers[instIdx][sessIdx],
+				workingDir: '/workspace',
+				gitRepo: 'github.com/zeroclaw/observegraph',
+				gitBranch: sessionBranches[instIdx][sessIdx],
+				gitCommit: hashSnapshot({ sessionId, seed }).slice(0, 7),
+				modelOverride: null,
+				startedAt: new Date(sessionStartMs).toISOString(),
+				endedAt: endedAt.toISOString(),
+				durationMs: endedAt.getTime() - sessionStartMs,
+				status: sessionStatus,
+				totalTokens: sum(sessionTasks.map((t) => t.totalTokens)),
+				totalCostUsd: round(sum(sessionTasks.map((t) => t.totalCostUsd)), 4),
+				taskCount: sessionTasks.length,
+				actionCount: sum(sessionTasks.map((t) => t.actionCount)),
+				exitCode: sessionStatus === 'failed' ? 1 : 0,
+				notes: sessionNotes[instIdx][sessIdx]
 			});
-			taskIndex += 1;
-			cursor = new Date(task.completedAt ?? task.startedAt).getTime() + between(rng, 25, 90) * 1000;
-			tasks.push(task);
-			actions.push(...task.actions);
-			sessionTasks.push(task);
 		}
-
-		const endedAt = new Date(cursor);
-		sessions.push({
-			sessionId,
-			instanceId: instance.instanceId,
-			trigger: pick(rng, ['cli', 'scheduled', 'api', 'webhook']),
-			workingDir: '/workspace/observegraph',
-			gitRepo: 'github.com/memoria/observegraph',
-			gitBranch: pick(rng, ['feat/observegraph-ui', 'feat/dag-merge', 'feat/risk-audit']),
-			gitCommit: hashSnapshot({ sessionId }).slice(0, 7),
-			modelOverride: rng() > 0.72 ? pick(rng, ['gpt-5-mini', 'claude-3-5-haiku']) : null,
-			startedAt: sessionStart.toISOString(),
-			endedAt: endedAt.toISOString(),
-			durationMs: endedAt.getTime() - sessionStart.getTime(),
-			status: sessionTasks.some((task) => task.status === 'failed') ? 'failed' : 'completed',
-			totalTokens: sum(sessionTasks.map((task) => task.totalTokens)),
-			totalCostUsd: round(sum(sessionTasks.map((task) => task.totalCostUsd)), 4),
-			taskCount: sessionTasks.length,
-			actionCount: sum(sessionTasks.map((task) => task.actionCount)),
-			exitCode: sessionTasks.some((task) => task.status === 'failed') ? 1 : 0,
-			notes: sessionTasks[0]?.title ?? 'ObserveGraph session seed'
-		});
-	});
-
-	if (tasks.length !== TOTAL_TASK_RUNS) {
-		throw new Error(`Expected ${TOTAL_TASK_RUNS} task runs, received ${tasks.length}`);
 	}
 
-	const taskTemplates = deriveTemplates(tasks);
-	const { stepNodes, stepEdges } = deriveGraphArtifacts(tasks);
+	const taskTemplatesOut = deriveTemplates(tasks);
+	const { stepNodes, stepEdges } = deriveGraphArtifacts(tasks, actions);
 	const sessionMetrics = deriveInstanceMetrics({ instances, sessions, tasks, actions, now });
-	const instancesWithMetrics = instances.map((instance) => ({
-		...instance,
-		metrics: sessionMetrics.get(instance.instanceId)
-	}));
+
+	const instancesWithMetrics = instances.map((instance) => {
+		const sessionCount = sessions.filter((s) => s.instanceId === instance.instanceId).length;
+		return { ...instance, sessionCount, metrics: sessionMetrics.get(instance.instanceId) };
+	});
 
 	return {
 		meta: {
@@ -502,171 +816,62 @@ export function generateObserveGraphMockData(seed = 20260321) {
 		},
 		instances: instancesWithMetrics,
 		sessions,
-		tasks: tasks.map((task) =>
-			Object.fromEntries(Object.entries(task).filter(([key]) => key !== 'actions'))
-		),
+		tasks,
 		actions,
-		taskTemplates,
+		taskTemplates: taskTemplatesOut,
 		stepNodes,
 		stepEdges
-	};
-}
-
-function buildTaskRun({ rng, taskOrdinal, instance, sessionId, blueprint, startMs }) {
-	const runId = `run_${String(taskOrdinal).padStart(3, '0')}`;
-	const taskId = `task_${String(taskOrdinal).padStart(3, '0')}`;
-	const startedAt = new Date(startMs);
-	const shouldRecover = rng() > 0.82;
-	const shouldFail = !shouldRecover && rng() > 0.92;
-	const stepSequence = shouldRecover
-		? [...blueprint.baseSteps.slice(0, -1), ...blueprint.branchSteps]
-		: [...blueprint.baseSteps];
-
-	let cursor = startedAt.getTime();
-	const runActions = stepSequence.map((definition, index) => {
-		const durationMs = between(rng, 20, definition.type === 'llm_call' ? 18000 : 4200);
-		const started = new Date(cursor);
-		const ended = new Date(cursor + durationMs);
-		cursor = ended.getTime() + between(rng, 10, 45) * 1000;
-		const permissionLevel = inferPermission(definition.type);
-		const totalTokens = sampleActionTokens(rng, definition, index);
-		const thinkingTokens =
-			definition.type === 'llm_call'
-				? Math.round(totalTokens * 0.34)
-				: Math.round(totalTokens * 0.14);
-		const outputTokens = totalTokens - thinkingTokens;
-		const isLast = index === stepSequence.length - 1;
-		const status = shouldFail && isLast ? 'failed' : 'success';
-		const exitCode = definition.type === 'shell' ? (status === 'failed' ? 1 : 0) : null;
-		const riskScore =
-			definition.type === 'shell' && definition.command?.includes('sudo')
-				? 0.88
-				: round(baseRisk(permissionLevel) + rng() * 0.12, 2);
-		return {
-			actionId: `${taskId}_act_${String(index + 1).padStart(2, '0')}`,
-			taskId,
-			instanceId: instance.instanceId,
-			runId,
-			stepId: `step_${blueprint.slug}_${slugify(definition.stepName)}`,
-			sequence: index + 1,
-			stepName: definition.stepName,
-			type: definition.type,
-			toolName: definition.toolName,
-			command: definition.command,
-			filePath: definition.filePath,
-			stdout: fakeStdout(definition),
-			stderr: status === 'failed' ? fakeError(definition) : null,
-			exitCode,
-			permissionLevel,
-			riskScore,
-			isFlagged: riskScore >= 0.8,
-			status,
-			startedAt: started.toISOString(),
-			endedAt: ended.toISOString(),
-			durationMs,
-			reasoning: fakeReasoning(definition, blueprint),
-			thinkingTokens,
-			outputTokens,
-			totalTokens,
-			modelUsed:
-				definition.type === 'llm_call'
-					? pick(rng, ['claude-3-7-sonnet', 'gpt-5-mini'])
-					: instance.modelDefault,
-			latencyMs: durationMs,
-			costUsd: round(totalTokens * 0.000021, 4),
-			retryCount: definition.isRecovery ? 1 : 0,
-			isRecovery: definition.isRecovery
-		};
-	});
-
-	const status = runActions.some((action) => action.status === 'failed') ? 'failed' : 'completed';
-	const completedAt = runActions.at(-1)?.endedAt ?? startedAt.toISOString();
-	const totalTokens = sum(runActions.map((action) => action.totalTokens));
-	const thinkingTokens = sum(runActions.map((action) => action.thinkingTokens));
-	const outputTokens = sum(runActions.map((action) => action.outputTokens));
-	const totalCostUsd = round(sum(runActions.map((action) => action.costUsd)), 4);
-	return {
-		taskId,
-		sessionId,
-		instanceId: instance.instanceId,
-		templateId: `tmpl_${blueprint.slug}`,
-		runId,
-		title: blueprint.title,
-		description: blueprint.description,
-		type: blueprint.type,
-		technologies: blueprint.technologies,
-		status,
-		priority: blueprint.priority,
-		startedAt: startedAt.toISOString(),
-		completedAt,
-		durationMs: new Date(completedAt).getTime() - startedAt.getTime(),
-		totalTokens,
-		thinkingTokens,
-		outputTokens,
-		totalCostUsd,
-		actionCount: runActions.length,
-		isBookmarked: rng() > 0.83,
-		rating: status === 'completed' ? between(rng, 3, 5) : null,
-		tags: blueprint.tags,
-		error: status === 'failed' ? 'Final verification step failed after one attempt.' : null,
-		actions: runActions
 	};
 }
 
 function deriveTemplates(tasks) {
 	const grouped = new Map();
 	for (const task of tasks) {
-		if (!grouped.has(task.templateId)) {
-			grouped.set(task.templateId, []);
-		}
+		if (!grouped.has(task.templateId)) grouped.set(task.templateId, []);
 		grouped.get(task.templateId).push(task);
 	}
 
 	return [...grouped.entries()].map(([templateId, runs]) => {
 		const sample = runs[0];
-		const successful = runs.filter((run) => run.status === 'completed');
-		const bestRun =
-			[...successful].sort((left, right) => left.totalCostUsd - right.totalCostUsd)[0] ?? sample;
+		const successful = runs.filter((r) => r.status === 'completed');
+		const bestRun = [...successful].sort((a, b) => a.totalCostUsd - b.totalCostUsd)[0] ?? sample;
 		return {
 			templateId,
 			title: sample.title,
 			fingerprint: slugify(sample.title),
 			type: sample.type,
 			technologies: sample.technologies,
-			createdAt: runs.map((run) => run.startedAt).sort()[0],
+			createdAt: runs.map((r) => r.startedAt).sort()[0],
 			runCount: runs.length,
 			successRate: round(successful.length / runs.length, 2),
-			avgTokens: round(average(runs.map((run) => run.totalTokens))),
-			avgDurationMs: round(average(runs.map((run) => run.durationMs))),
+			avgTokens: round(average(runs.map((r) => r.totalTokens))),
+			avgDurationMs: round(average(runs.map((r) => r.durationMs))),
 			bestRunId: bestRun.runId,
 			tags: sample.tags
 		};
 	});
 }
 
-function sampleActionTokens(rng, definition, index) {
-	if (index === 0 && definition.stepName === SHARED_ENTRY_STEP_NAME) {
-		return between(rng, 320, 760);
-	}
-	if (definition.type === 'llm_call') {
-		return between(rng, 900, 2100);
-	}
-	if (definition.type === 'shell') {
-		return between(rng, 160, 520);
-	}
-	return between(rng, 80, 300);
-}
-
-function deriveGraphArtifacts(tasks) {
+function deriveGraphArtifacts(tasks, allActions) {
 	const nodeMap = new Map();
 	const edgeMap = new Map();
+	const actionsByTask = new Map();
+
+	for (const a of allActions) {
+		if (!actionsByTask.has(a.taskId)) actionsByTask.set(a.taskId, []);
+		actionsByTask.get(a.taskId).push(a);
+	}
+	for (const taskId of actionsByTask.keys()) {
+		actionsByTask.get(taskId).sort((a, b) => a.sequence - b.sequence);
+	}
 
 	for (const task of tasks) {
-		const groupedActions = actionsForTask(task.taskId, task.actions ?? []);
+		const groupedActions = actionsByTask.get(task.taskId) ?? [];
+
 		for (const action of groupedActions) {
-			const key = `${task.templateId}:${action.stepId}`;
-			if (!nodeMap.has(key)) {
-				nodeMap.set(key, {
+			const nodeKey = `${task.templateId}:${action.stepId}`;
+			if (!nodeMap.has(nodeKey)) {
+				nodeMap.set(nodeKey, {
 					stepId: action.stepId,
 					templateId: task.templateId,
 					fingerprint: `${action.toolName}:${slugify(action.stepName)}`,
@@ -682,7 +887,7 @@ function deriveGraphArtifacts(tasks) {
 					isExit: false
 				});
 			}
-			const node = nodeMap.get(key);
+			const node = nodeMap.get(nodeKey);
 			node.runCount += 1;
 			node.successCount += action.status === 'success' ? 1 : 0;
 			node.tokenSamples.push(action.totalTokens);
@@ -692,15 +897,15 @@ function deriveGraphArtifacts(tasks) {
 			node.isExit = node.isExit || action.sequence === groupedActions.length;
 		}
 
-		for (let index = 0; index < groupedActions.length - 1; index += 1) {
-			const current = groupedActions[index];
-			const next = groupedActions[index + 1];
-			const key = `${task.templateId}:${current.stepId}:${next.stepId}`;
-			if (!edgeMap.has(key)) {
-				edgeMap.set(key, {
-					edgeId: `edge_${task.templateId}_${current.stepId}_${next.stepId}`,
+		for (let i = 0; i < groupedActions.length - 1; i++) {
+			const curr = groupedActions[i];
+			const next = groupedActions[i + 1];
+			const edgeKey = `${task.templateId}:${curr.stepId}:${next.stepId}`;
+			if (!edgeMap.has(edgeKey)) {
+				edgeMap.set(edgeKey, {
+					edgeId: `edge_${task.templateId}_${curr.stepId}_${next.stepId}`,
 					templateId: task.templateId,
-					fromStepId: current.stepId,
+					fromStepId: curr.stepId,
 					toStepId: next.stepId,
 					runCount: 0,
 					runIds: [],
@@ -709,12 +914,38 @@ function deriveGraphArtifacts(tasks) {
 					successCount: 0
 				});
 			}
-			const edge = edgeMap.get(key);
+			const edge = edgeMap.get(edgeKey);
 			edge.runCount += 1;
 			edge.runIds.push(task.runId);
 			edge.tokenSamples.push(next.totalTokens);
 			edge.latencySamples.push(next.latencyMs);
 			edge.successCount += next.status === 'success' ? 1 : 0;
+
+			// Also record the bypass edge when a failure recovery occurs:
+			// prev → recovery (skipping the failed node) appears as a template-level DAG branch
+			if (curr.status === 'failed' && next.isRecovery && i > 0) {
+				const prev = groupedActions[i - 1];
+				const bypassKey = `${task.templateId}:${prev.stepId}:${next.stepId}:bypass`;
+				if (!edgeMap.has(bypassKey)) {
+					edgeMap.set(bypassKey, {
+						edgeId: `edge_bypass_${task.templateId}_${prev.stepId}_${next.stepId}`,
+						templateId: task.templateId,
+						fromStepId: prev.stepId,
+						toStepId: next.stepId,
+						runCount: 0,
+						runIds: [],
+						tokenSamples: [],
+						latencySamples: [],
+						successCount: 0
+					});
+				}
+				const bypassEdge = edgeMap.get(bypassKey);
+				bypassEdge.runCount += 1;
+				bypassEdge.runIds.push(task.runId);
+				bypassEdge.tokenSamples.push(next.totalTokens);
+				bypassEdge.latencySamples.push(next.latencyMs);
+				bypassEdge.successCount += 1;
+			}
 		}
 	}
 
@@ -756,95 +987,32 @@ function deriveInstanceMetrics({ instances, sessions, tasks, actions, now }) {
 	const metrics = new Map();
 
 	for (const instance of instances) {
-		const instanceSessions = sessions.filter(
-			(session) => session.instanceId === instance.instanceId
-		);
-		const instanceTasks = tasks.filter((task) => task.instanceId === instance.instanceId);
-		const instanceActions = actions.filter((action) => action.instanceId === instance.instanceId);
+		const instanceSessions = sessions.filter((s) => s.instanceId === instance.instanceId);
+		const instanceTasks = tasks.filter((t) => t.instanceId === instance.instanceId);
+		const instanceActions = actions.filter((a) => a.instanceId === instance.instanceId);
+		const rng2 = mulberry32(hashSnapshot(instance.instanceId).charCodeAt(0));
 		metrics.set(instance.instanceId, {
 			sessionCount7d: instanceSessions.filter(
-				(session) => new Date(session.startedAt).getTime() >= sevenDaysAgo
+				(s) => new Date(s.startedAt).getTime() >= sevenDaysAgo
 			).length,
 			taskCount7d: instanceTasks.filter(
-				(task) => new Date(task.startedAt).getTime() >= sevenDaysAgo
+				(t) => new Date(t.startedAt).getTime() >= sevenDaysAgo
 			).length,
 			actionCount7d: instanceActions.filter(
-				(action) => new Date(action.startedAt).getTime() >= sevenDaysAgo
+				(a) => new Date(a.startedAt).getTime() >= sevenDaysAgo
 			).length,
 			completedToday: instanceTasks.filter(
-				(task) =>
-					task.status === 'completed' && new Date(task.startedAt).getTime() >= todayStart.getTime()
+				(t) =>
+					t.status === 'completed' &&
+					new Date(t.startedAt).getTime() >= todayStart.getTime()
 			).length,
-			runningTasks:
-				instance.status === 'online'
-					? between(mulberry32(hashSnapshot(instance.instanceId).length), 0, 4)
-					: 0,
-			totalTokens7d: sum(instanceTasks.map((task) => task.totalTokens)),
-			totalCostUsd7d: round(sum(instanceTasks.map((task) => task.totalCostUsd)), 4)
+			runningTasks: instance.status === 'online' ? between(rng2, 0, 3) : 0,
+			totalTokens7d: sum(instanceTasks.map((t) => t.totalTokens)),
+			totalCostUsd7d: round(sum(instanceTasks.map((t) => t.totalCostUsd)), 4)
 		});
 	}
 
 	return metrics;
-}
-
-function inferPermission(type) {
-	if (type === 'file_write') {
-		return 'write';
-	}
-	if (type === 'shell') {
-		return 'dangerous';
-	}
-	return 'read';
-}
-
-function baseRisk(permissionLevel) {
-	if (permissionLevel === 'dangerous') return 0.24;
-	if (permissionLevel === 'write') return 0.18;
-	return 0.04;
-}
-
-function fakeStdout(stepDefinition) {
-	if (stepDefinition.type === 'shell') {
-		return stepDefinition.command?.startsWith('pytest')
-			? 'collected 4 items\n4 passed in 0.82s'
-			: 'Compiling observer v0.1.0\nFinished dev profile target(s) in 2.4s';
-	}
-	if (stepDefinition.type === 'llm_call') {
-		return "I'll keep the emitter isolated and project graph edges after each run.";
-	}
-	return stepDefinition.filePath ? `opened ${stepDefinition.filePath}` : 'context loaded';
-}
-
-function fakeError(stepDefinition) {
-	if (stepDefinition.type === 'shell') {
-		return 'assertion failed: expected 200 response and received 500';
-	}
-	return `validation error while executing ${stepDefinition.stepName}`;
-}
-
-function fakeReasoning(stepDefinition, blueprint) {
-	if (stepDefinition.type === 'llm_call') {
-		return `Need to lock the ${blueprint.title.toLowerCase()} strategy before mutating code paths.`;
-	}
-	if (stepDefinition.type === 'file_write') {
-		return `Applying the implementation slice for ${blueprint.tags.join(', ')}.`;
-	}
-	if (stepDefinition.type === 'shell') {
-		return `Verify that the ${blueprint.type} path still passes after the latest write.`;
-	}
-	return `Inspect current state before changing ${blueprint.title.toLowerCase()}.`;
-}
-
-function actionsForTask(taskId, actionPool) {
-	if (actionPool.length > 0) {
-		return actionPool;
-	}
-	return [];
-}
-
-function round(value, digits = 0) {
-	const factor = 10 ** digits;
-	return Math.round(value * factor) / factor;
 }
 
 export function summarizeMockData(data) {

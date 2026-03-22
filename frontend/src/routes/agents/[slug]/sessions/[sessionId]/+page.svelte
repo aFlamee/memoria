@@ -18,6 +18,31 @@
 	let lastSessionId: string | null = null;
 	let chromeElement = $state<HTMLDivElement | null>(null);
 
+	// ── Left panel filter state ─────────────────────────────
+	let filterStatus = $state<'all' | 'completed' | 'failed'>('all');
+	let filterType = $state<'all' | 'code' | 'shell'>('all');
+	let filterTokenBucket = $state<'all' | 'low' | 'mid' | 'high'>('all');
+
+	const allTasks = $derived(data.sessionView?.session.tasks ?? []);
+
+	const filteredTasks = $derived(allTasks.filter((t) => {
+		if (filterStatus !== 'all' && t.status !== filterStatus) return false;
+		if (filterType !== 'all') {
+			const hasType = t.nodes.some((n) => {
+				if (filterType === 'shell') return n.toolName === 'bash';
+				if (filterType === 'code') return n.toolName === 'read_file' || n.toolName === 'write_file' || n.toolName === 'grep';
+				return true;
+			});
+			if (!hasType) return false;
+		}
+		if (filterTokenBucket !== 'all') {
+			if (filterTokenBucket === 'low' && t.totalTokens >= 2000) return false;
+			if (filterTokenBucket === 'mid' && (t.totalTokens < 2000 || t.totalTokens >= 8000)) return false;
+			if (filterTokenBucket === 'high' && t.totalTokens < 8000) return false;
+		}
+		return true;
+	}));
+
 	const graphIndex = $derived(
 		data.sessionView ? buildSessionGraphIndex(data.sessionView.session) : null
 	);
@@ -169,6 +194,32 @@
 	function formatSuccessRate(successRate: number) {
 		return `${Math.round(successRate * 100)}%`;
 	}
+
+	function formatTimestamp(iso: string | null) {
+		if (!iso) return '—';
+		const d = new Date(iso);
+		return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+	}
+
+	function formatDate(iso: string | null) {
+		if (!iso) return '—';
+		const d = new Date(iso);
+		return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+	}
+
+	const TOOL_LABELS: Record<string, string> = {
+		read_file: '📄 read_file',
+		write_file: '✏️ write_file',
+		bash: '$ bash',
+		grep: '🔍 grep',
+		list_dir: '📁 list_dir',
+		api_call: '🌐 api_call',
+		web_search: '🔎 web_search'
+	};
+
+	function toolLabel(toolName: string) {
+		return TOOL_LABELS[toolName] ?? toolName;
+	}
 </script>
 
 {#if data.sessionView && graphIndex}
@@ -195,6 +246,79 @@
 				/>
 			{/key}
 		</div>
+
+		<!-- Left filter + task list panel -->
+		<nav class="task-filter-panel">
+			<div class="task-filter-panel__heading">
+				<span class="task-filter-panel__label">Tasks</span>
+				<span class="task-filter-panel__count">{filteredTasks.length} / {allTasks.length}</span>
+			</div>
+
+			<div class="task-filter-panel__filters">
+				<div class="task-filter-panel__filter-group">
+					<span class="task-filter-panel__filter-label">Status</span>
+					<div class="task-filter-panel__chips">
+						{#each (['all', 'completed', 'failed'] as const) as opt}
+							<button
+								type="button"
+								class={`task-filter-chip ${filterStatus === opt ? 'task-filter-chip--active' : ''}`}
+								onclick={() => { filterStatus = opt; }}
+							>{opt}</button>
+						{/each}
+					</div>
+				</div>
+
+				<div class="task-filter-panel__filter-group">
+					<span class="task-filter-panel__filter-label">Type</span>
+					<div class="task-filter-panel__chips">
+						{#each (['all', 'code', 'shell'] as const) as opt}
+							<button
+								type="button"
+								class={`task-filter-chip ${filterType === opt ? 'task-filter-chip--active' : ''}`}
+								onclick={() => { filterType = opt; }}
+							>{opt}</button>
+						{/each}
+					</div>
+				</div>
+
+				<div class="task-filter-panel__filter-group">
+					<span class="task-filter-panel__filter-label">Tokens</span>
+					<div class="task-filter-panel__chips">
+						{#each (['all', 'low', 'mid', 'high'] as const) as opt}
+							<button
+								type="button"
+								class={`task-filter-chip ${filterTokenBucket === opt ? 'task-filter-chip--active' : ''}`}
+								onclick={() => { filterTokenBucket = opt; }}
+							>{opt === 'low' ? '<2k' : opt === 'mid' ? '2–8k' : opt === 'high' ? '>8k' : opt}</button>
+						{/each}
+					</div>
+				</div>
+			</div>
+
+			<div class="task-filter-panel__list">
+				{#if filteredTasks.length === 0}
+					<div class="task-filter-panel__empty">No tasks match the current filters.</div>
+				{/if}
+				{#each filteredTasks as task (task.taskId)}
+					<button
+						type="button"
+						class={`task-filter-item ${activeTaskId === task.taskId ? 'task-filter-item--active' : ''}`}
+						onclick={() => openTask(task.taskId)}
+					>
+						<div class="task-filter-item__top">
+							<span class="task-filter-item__title">{task.title}</span>
+							<span class="session-sidebar__status-pill session-sidebar__status-pill--{task.status}">{task.status}</span>
+						</div>
+						<div class="task-filter-item__meta">
+							<span>{task.actionCount} actions</span>
+							<span>{task.totalTokensLabel} tok</span>
+							<span>{formatDuration(task.durationMs)}</span>
+						</div>
+						<div class="task-filter-item__cost">{task.totalCostUsdLabel}</div>
+					</button>
+				{/each}
+			</div>
+		</nav>
 
 		<div class="session-workspace__chrome" bind:this={chromeElement}>
 			<div class="session-workspace__chrome-main">
@@ -226,52 +350,123 @@
 		>
 			{#if sidebarState === 'detail' && activeTask && activeTaskRoot}
 				<div class="session-sidebar__section">
+
+					<!-- Task header -->
 					<div class="session-sidebar__detail-header">
-						<div>
-							<p class="session-workspace__eyeline">Focused task</p>
+						<div class="session-sidebar__task-id">
 							<h3>{activeTask.title}</h3>
-						</div>
-						<button type="button" class="session-sidebar__close" onclick={resetFocus}>
-							Close
-						</button>
-					</div>
-
-					<div class="session-sidebar__detail-card">
-						<div class="session-sidebar__item-top">
-							<strong>Root node</strong>
-							<span>{activeTask.status}</span>
-						</div>
-						<p>{activeTaskRoot.rootNode?.label ?? 'No root node'}</p>
-						<div class="session-sidebar__meta">
-							<span>{activeTask.actionCount} actions</span>
-							<span>{formatDuration(activeTask.durationMs)}</span>
-							<span>{activeTask.totalCostUsdLabel}</span>
-						</div>
-					</div>
-
-					{#if selectedAction}
-						<div class="session-sidebar__detail-card">
-							<div class="session-sidebar__item-top">
-								<strong>Action</strong>
-								<span>{selectedAction.status}</span>
+							<div class="session-sidebar__meta" style="margin-top:0.3rem">
+								<span>{activeTask.actionCount} actions</span>
+								<span>{formatDuration(activeTask.durationMs)}</span>
+								<span>{activeTask.totalCostUsdLabel}</span>
+								<span class="session-sidebar__status-pill session-sidebar__status-pill--{activeTask.status}">{activeTask.status}</span>
 							</div>
-							<p>{selectedAction.label}</p>
-							<div class="session-sidebar__meta">
-								<span>{selectedAction.toolName}</span>
-								<span>{selectedAction.totalTokens} tok</span>
-								<span>{selectedAction.durationMs}ms</span>
-								{#if selectedAction.riskScore > 0}
-									<span>risk {formatRisk(selectedAction.riskScore)}</span>
+						</div>
+						<button type="button" class="session-sidebar__close" onclick={resetFocus}>✕</button>
+					</div>
+
+					<!-- Action detail -->
+					{#if selectedNode}
+						<div class="action-detail">
+							<div class="action-detail__header">
+								<span class="action-detail__tool-badge action-detail__tool-badge--{selectedNode.toolName}">{toolLabel(selectedNode.toolName)}</span>
+								<span class="session-sidebar__status-pill session-sidebar__status-pill--{selectedNode.status}">{selectedNode.status}</span>
+							</div>
+
+							<h4 class="action-detail__name">{selectedNode.label}</h4>
+
+							<div class="action-detail__meta-grid">
+								<div class="action-detail__meta-cell">
+									<span>Date</span>
+									<strong>{formatDate(selectedNode.startedAt)}</strong>
+								</div>
+								<div class="action-detail__meta-cell">
+									<span>Time</span>
+									<strong>{formatTimestamp(selectedNode.startedAt)}</strong>
+								</div>
+								<div class="action-detail__meta-cell">
+									<span>Duration</span>
+									<strong>{selectedNode.durationMs}ms</strong>
+								</div>
+								<div class="action-detail__meta-cell">
+									<span>Tokens</span>
+									<strong>{selectedNode.totalTokens}</strong>
+								</div>
+								<div class="action-detail__meta-cell">
+									<span>Cost</span>
+									<strong>${selectedNode.costUsd.toFixed(4)}</strong>
+								</div>
+								<div class="action-detail__meta-cell">
+									<span>Permission</span>
+									<strong>{selectedNode.permissionLevel}</strong>
+								</div>
+								{#if selectedNode.riskScore > 0}
+									<div class="action-detail__meta-cell action-detail__meta-cell--risk">
+										<span>Risk</span>
+										<strong>{formatRisk(selectedNode.riskScore)}</strong>
+									</div>
+								{/if}
+								{#if selectedNode.modelUsed}
+									<div class="action-detail__meta-cell action-detail__meta-cell--wide">
+										<span>Model</span>
+										<strong>{selectedNode.modelUsed}</strong>
+									</div>
 								{/if}
 							</div>
+
+							{#if selectedNode.reasoning}
+								<div class="action-detail__section">
+									<span class="action-detail__label">Reasoning</span>
+									<p class="action-detail__reasoning">{selectedNode.reasoning}</p>
+								</div>
+							{/if}
+
+							{#if selectedNode.filePath}
+								<div class="action-detail__section">
+									<span class="action-detail__label">File</span>
+									<code class="action-detail__filepath">{selectedNode.filePath}</code>
+								</div>
+							{/if}
+
+							{#if selectedNode.command}
+								<div class="action-detail__section">
+									<span class="action-detail__label">stdin</span>
+									<pre class="action-detail__code">{selectedNode.command}</pre>
+								</div>
+							{/if}
+
+							{#if selectedNode.stdout}
+								<div class="action-detail__section">
+									<span class="action-detail__label">stdout</span>
+									<pre class="action-detail__code">{selectedNode.stdout}</pre>
+								</div>
+							{/if}
+
+							{#if selectedNode.stderr}
+								<div class="action-detail__section">
+									<span class="action-detail__label">stderr</span>
+									<pre class="action-detail__code action-detail__code--error">{selectedNode.stderr}</pre>
+								</div>
+							{/if}
+
+							{#if selectedNode.exitCode !== null && selectedNode.exitCode !== undefined}
+								<div class="action-detail__section">
+									<span class="action-detail__label">Exit code</span>
+									<code class="action-detail__filepath">{selectedNode.exitCode}</code>
+								</div>
+							{/if}
+						</div>
+					{:else}
+						<div class="session-sidebar__detail-card">
+							<p class="action-detail__hint">Click a node in the graph to inspect it.</p>
 						</div>
 					{/if}
 
+					<!-- Edge list -->
 					<div class="session-sidebar__section session-sidebar__section--flush">
 						<div class="panel-heading">
-							<h3>Edges</h3>
+							<h3>Path edges</h3>
 						</div>
-
 						<div class="session-sidebar__stack">
 							{#if activeTask.edges.length > 0}
 								{#each activeTask.edges as edge (edge.id)}
@@ -284,10 +479,10 @@
 											<strong>{edge.sourceLabel}</strong>
 											<span>{formatSuccessRate(edge.successRate)}</span>
 										</div>
-										<p>{edge.targetLabel}</p>
+										<p>→ {edge.targetLabel}</p>
 										<div class="session-sidebar__meta">
 											<span>{edge.totalTokens} tok</span>
-											<span>{edge.avgLatencyMs}ms</span>
+											<span>{edge.avgLatencyMs}ms avg</span>
 										</div>
 									</button>
 								{/each}
@@ -298,21 +493,6 @@
 							{/if}
 						</div>
 					</div>
-
-					{#if selectedEdge}
-						<div class="session-sidebar__detail-card">
-							<div class="session-sidebar__item-top">
-								<strong>Selected edge</strong>
-								<span>{formatSuccessRate(selectedEdge.successRate)}</span>
-							</div>
-							<p>{selectedEdge.sourceLabel} -> {selectedEdge.targetLabel}</p>
-							<div class="session-sidebar__meta">
-								<span>{selectedEdge.traversalCount} traversal</span>
-								<span>{selectedEdge.totalTokens} tok</span>
-								<span>{selectedEdge.avgLatencyMs}ms</span>
-							</div>
-						</div>
-					{/if}
 				</div>
 			{/if}
 		</aside>

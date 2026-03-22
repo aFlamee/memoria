@@ -1,442 +1,921 @@
 [
-	{
-		"edgeId": "edge_tmpl_create_observer_crate_step_create_observer_crate_read_project_manifest_step_create_observer_crate_plan_implementation",
-		"templateId": "tmpl_create_observer_crate",
-		"fromStepId": "step_create_observer_crate_read_project_manifest",
-		"toStepId": "step_create_observer_crate_plan_implementation",
-		"runCount": 7,
-		"runIds": ["run_001", "run_009", "run_017", "run_025", "run_033", "run_041", "run_049"],
-		"avgTokens": 1440,
-		"avgLatencyMs": 7955,
-		"successRate": 1
-	},
-	{
-		"edgeId": "edge_tmpl_create_observer_crate_step_create_observer_crate_plan_implementation_step_create_observer_crate_write_observer_library",
-		"templateId": "tmpl_create_observer_crate",
-		"fromStepId": "step_create_observer_crate_plan_implementation",
-		"toStepId": "step_create_observer_crate_write_observer_library",
-		"runCount": 7,
-		"runIds": ["run_001", "run_009", "run_017", "run_025", "run_033", "run_041", "run_049"],
-		"avgTokens": 170,
-		"avgLatencyMs": 2629,
-		"successRate": 1
-	},
-	{
-		"edgeId": "edge_tmpl_create_observer_crate_step_create_observer_crate_write_observer_library_step_create_observer_crate_build_observer_crate",
-		"templateId": "tmpl_create_observer_crate",
-		"fromStepId": "step_create_observer_crate_write_observer_library",
-		"toStepId": "step_create_observer_crate_build_observer_crate",
-		"runCount": 4,
-		"runIds": ["run_001", "run_009", "run_017", "run_033"],
-		"avgTokens": 483,
-		"avgLatencyMs": 2204,
-		"successRate": 0.75
-	},
-	{
-		"edgeId": "edge_tmpl_capture_action_events_step_capture_action_events_inspect_tool_executor_step_capture_action_events_design_payload_envelope",
-		"templateId": "tmpl_capture_action_events",
-		"fromStepId": "step_capture_action_events_inspect_tool_executor",
-		"toStepId": "step_capture_action_events_design_payload_envelope",
-		"runCount": 7,
-		"runIds": ["run_002", "run_010", "run_018", "run_026", "run_034", "run_042", "run_050"],
-		"avgTokens": 1598,
-		"avgLatencyMs": 12175,
-		"successRate": 1
-	},
-	{
-		"edgeId": "edge_tmpl_capture_action_events_step_capture_action_events_design_payload_envelope_step_capture_action_events_wire_event_emitters",
-		"templateId": "tmpl_capture_action_events",
-		"fromStepId": "step_capture_action_events_design_payload_envelope",
-		"toStepId": "step_capture_action_events_wire_event_emitters",
-		"runCount": 7,
-		"runIds": ["run_002", "run_010", "run_018", "run_026", "run_034", "run_042", "run_050"],
-		"avgTokens": 270,
-		"avgLatencyMs": 1640,
-		"successRate": 1
-	},
-	{
-		"edgeId": "edge_tmpl_capture_action_events_step_capture_action_events_wire_event_emitters_step_capture_action_events_run_cargo_test_observer",
-		"templateId": "tmpl_capture_action_events",
-		"fromStepId": "step_capture_action_events_wire_event_emitters",
-		"toStepId": "step_capture_action_events_run_cargo_test_observer",
-		"runCount": 5,
-		"runIds": ["run_002", "run_010", "run_026", "run_034", "run_050"],
-		"avgTokens": 465,
-		"avgLatencyMs": 1892,
-		"successRate": 1
-	},
-	{
-		"edgeId": "edge_tmpl_ship_fastapi_instance_endpoints_step_ship_fastapi_instance_endpoints_read_api_router_step_ship_fastapi_instance_endpoints_draft_pydantic_contracts",
-		"templateId": "tmpl_ship_fastapi_instance_endpoints",
-		"fromStepId": "step_ship_fastapi_instance_endpoints_read_api_router",
-		"toStepId": "step_ship_fastapi_instance_endpoints_draft_pydantic_contracts",
-		"runCount": 6,
-		"runIds": ["run_003", "run_011", "run_019", "run_027", "run_035", "run_043"],
-		"avgTokens": 1404,
-		"avgLatencyMs": 10796,
-		"successRate": 1
-	},
-	{
-		"edgeId": "edge_tmpl_ship_fastapi_instance_endpoints_step_ship_fastapi_instance_endpoints_draft_pydantic_contracts_step_ship_fastapi_instance_endpoints_write_instance_endpoints",
-		"templateId": "tmpl_ship_fastapi_instance_endpoints",
-		"fromStepId": "step_ship_fastapi_instance_endpoints_draft_pydantic_contracts",
-		"toStepId": "step_ship_fastapi_instance_endpoints_write_instance_endpoints",
-		"runCount": 6,
-		"runIds": ["run_003", "run_011", "run_019", "run_027", "run_035", "run_043"],
-		"avgTokens": 205,
-		"avgLatencyMs": 1565,
-		"successRate": 1
-	},
-	{
-		"edgeId": "edge_tmpl_ship_fastapi_instance_endpoints_step_ship_fastapi_instance_endpoints_write_instance_endpoints_step_ship_fastapi_instance_endpoints_run_pytest_instances",
-		"templateId": "tmpl_ship_fastapi_instance_endpoints",
-		"fromStepId": "step_ship_fastapi_instance_endpoints_write_instance_endpoints",
-		"toStepId": "step_ship_fastapi_instance_endpoints_run_pytest_instances",
-		"runCount": 2,
-		"runIds": ["run_003", "run_035"],
-		"avgTokens": 502,
-		"avgLatencyMs": 1764,
-		"successRate": 1
-	},
-	{
-		"edgeId": "edge_tmpl_merge_task_runs_into_dag_step_merge_task_runs_into_dag_inspect_cypher_merge_patterns_step_merge_task_runs_into_dag_reason_about_merge_logic",
-		"templateId": "tmpl_merge_task_runs_into_dag",
-		"fromStepId": "step_merge_task_runs_into_dag_inspect_cypher_merge_patterns",
-		"toStepId": "step_merge_task_runs_into_dag_reason_about_merge_logic",
-		"runCount": 6,
-		"runIds": ["run_004", "run_012", "run_020", "run_028", "run_036", "run_044"],
-		"avgTokens": 1528,
-		"avgLatencyMs": 9925,
-		"successRate": 1
-	},
-	{
-		"edgeId": "edge_tmpl_merge_task_runs_into_dag_step_merge_task_runs_into_dag_reason_about_merge_logic_step_merge_task_runs_into_dag_implement_step_merge_query",
-		"templateId": "tmpl_merge_task_runs_into_dag",
-		"fromStepId": "step_merge_task_runs_into_dag_reason_about_merge_logic",
-		"toStepId": "step_merge_task_runs_into_dag_implement_step_merge_query",
-		"runCount": 6,
-		"runIds": ["run_004", "run_012", "run_020", "run_028", "run_036", "run_044"],
-		"avgTokens": 241,
-		"avgLatencyMs": 1557,
-		"successRate": 1
-	},
-	{
-		"edgeId": "edge_tmpl_merge_task_runs_into_dag_step_merge_task_runs_into_dag_implement_step_merge_query_step_merge_task_runs_into_dag_repair_edge_aggregation",
-		"templateId": "tmpl_merge_task_runs_into_dag",
-		"fromStepId": "step_merge_task_runs_into_dag_implement_step_merge_query",
-		"toStepId": "step_merge_task_runs_into_dag_repair_edge_aggregation",
-		"runCount": 4,
-		"runIds": ["run_004", "run_020", "run_028", "run_044"],
-		"avgTokens": 172,
-		"avgLatencyMs": 2081,
-		"successRate": 1
-	},
-	{
-		"edgeId": "edge_tmpl_merge_task_runs_into_dag_step_merge_task_runs_into_dag_repair_edge_aggregation_step_merge_task_runs_into_dag_rerun_dag_merge_tests",
-		"templateId": "tmpl_merge_task_runs_into_dag",
-		"fromStepId": "step_merge_task_runs_into_dag_repair_edge_aggregation",
-		"toStepId": "step_merge_task_runs_into_dag_rerun_dag_merge_tests",
-		"runCount": 4,
-		"runIds": ["run_004", "run_020", "run_028", "run_044"],
-		"avgTokens": 515,
-		"avgLatencyMs": 2110,
-		"successRate": 1
-	},
-	{
-		"edgeId": "edge_tmpl_visualize_template_dag_step_visualize_template_dag_read_graph_panel_component_step_visualize_template_dag_plan_dag_interaction_model",
-		"templateId": "tmpl_visualize_template_dag",
-		"fromStepId": "step_visualize_template_dag_read_graph_panel_component",
-		"toStepId": "step_visualize_template_dag_plan_dag_interaction_model",
-		"runCount": 6,
-		"runIds": ["run_005", "run_013", "run_021", "run_029", "run_037", "run_045"],
-		"avgTokens": 1823,
-		"avgLatencyMs": 11145,
-		"successRate": 1
-	},
-	{
-		"edgeId": "edge_tmpl_visualize_template_dag_step_visualize_template_dag_plan_dag_interaction_model_step_visualize_template_dag_wire_cytoscape_canvas",
-		"templateId": "tmpl_visualize_template_dag",
-		"fromStepId": "step_visualize_template_dag_plan_dag_interaction_model",
-		"toStepId": "step_visualize_template_dag_wire_cytoscape_canvas",
-		"runCount": 6,
-		"runIds": ["run_005", "run_013", "run_021", "run_029", "run_037", "run_045"],
-		"avgTokens": 226,
-		"avgLatencyMs": 1882,
-		"successRate": 1
-	},
-	{
-		"edgeId": "edge_tmpl_visualize_template_dag_step_visualize_template_dag_wire_cytoscape_canvas_step_visualize_template_dag_tune_graph_layout_spacing",
-		"templateId": "tmpl_visualize_template_dag",
-		"fromStepId": "step_visualize_template_dag_wire_cytoscape_canvas",
-		"toStepId": "step_visualize_template_dag_tune_graph_layout_spacing",
-		"runCount": 3,
-		"runIds": ["run_005", "run_029", "run_037"],
-		"avgTokens": 262,
-		"avgLatencyMs": 2187,
-		"successRate": 1
-	},
-	{
-		"edgeId": "edge_tmpl_visualize_template_dag_step_visualize_template_dag_tune_graph_layout_spacing_step_visualize_template_dag_rerun_svelte_check_graph",
-		"templateId": "tmpl_visualize_template_dag",
-		"fromStepId": "step_visualize_template_dag_tune_graph_layout_spacing",
-		"toStepId": "step_visualize_template_dag_rerun_svelte_check_graph",
-		"runCount": 3,
-		"runIds": ["run_005", "run_029", "run_037"],
-		"avgTokens": 550,
-		"avgLatencyMs": 1471,
-		"successRate": 1
-	},
-	{
-		"edgeId": "edge_tmpl_audit_risk_scoring_step_audit_risk_scoring_inspect_risk_rules_step_audit_risk_scoring_evaluate_suspicious_patterns",
-		"templateId": "tmpl_audit_risk_scoring",
-		"fromStepId": "step_audit_risk_scoring_inspect_risk_rules",
-		"toStepId": "step_audit_risk_scoring_evaluate_suspicious_patterns",
-		"runCount": 6,
-		"runIds": ["run_006", "run_014", "run_022", "run_030", "run_038", "run_046"],
-		"avgTokens": 1664,
-		"avgLatencyMs": 5770,
-		"successRate": 1
-	},
-	{
-		"edgeId": "edge_tmpl_audit_risk_scoring_step_audit_risk_scoring_evaluate_suspicious_patterns_step_audit_risk_scoring_update_scoring_thresholds",
-		"templateId": "tmpl_audit_risk_scoring",
-		"fromStepId": "step_audit_risk_scoring_evaluate_suspicious_patterns",
-		"toStepId": "step_audit_risk_scoring_update_scoring_thresholds",
-		"runCount": 6,
-		"runIds": ["run_006", "run_014", "run_022", "run_030", "run_038", "run_046"],
-		"avgTokens": 192,
-		"avgLatencyMs": 2496,
-		"successRate": 1
-	},
-	{
-		"edgeId": "edge_tmpl_audit_risk_scoring_step_audit_risk_scoring_update_scoring_thresholds_step_audit_risk_scoring_flag_sudo_restart_path",
-		"templateId": "tmpl_audit_risk_scoring",
-		"fromStepId": "step_audit_risk_scoring_update_scoring_thresholds",
-		"toStepId": "step_audit_risk_scoring_flag_sudo_restart_path",
-		"runCount": 2,
-		"runIds": ["run_006", "run_046"],
-		"avgTokens": 232,
-		"avgLatencyMs": 1878,
-		"successRate": 1
-	},
-	{
-		"edgeId": "edge_tmpl_audit_risk_scoring_step_audit_risk_scoring_flag_sudo_restart_path_step_audit_risk_scoring_rerun_audit_validation",
-		"templateId": "tmpl_audit_risk_scoring",
-		"fromStepId": "step_audit_risk_scoring_flag_sudo_restart_path",
-		"toStepId": "step_audit_risk_scoring_rerun_audit_validation",
-		"runCount": 2,
-		"runIds": ["run_006", "run_046"],
-		"avgTokens": 394,
-		"avgLatencyMs": 2092,
-		"successRate": 1
-	},
-	{
-		"edgeId": "edge_tmpl_analyze_cost_breakdown_step_analyze_cost_breakdown_collect_session_usage_step_analyze_cost_breakdown_plan_aggregation_query",
-		"templateId": "tmpl_analyze_cost_breakdown",
-		"fromStepId": "step_analyze_cost_breakdown_collect_session_usage",
-		"toStepId": "step_analyze_cost_breakdown_plan_aggregation_query",
-		"runCount": 6,
-		"runIds": ["run_007", "run_015", "run_023", "run_031", "run_039", "run_047"],
-		"avgTokens": 1625,
-		"avgLatencyMs": 12926,
-		"successRate": 1
-	},
-	{
-		"edgeId": "edge_tmpl_analyze_cost_breakdown_step_analyze_cost_breakdown_plan_aggregation_query_step_analyze_cost_breakdown_implement_cost_views",
-		"templateId": "tmpl_analyze_cost_breakdown",
-		"fromStepId": "step_analyze_cost_breakdown_plan_aggregation_query",
-		"toStepId": "step_analyze_cost_breakdown_implement_cost_views",
-		"runCount": 6,
-		"runIds": ["run_007", "run_015", "run_023", "run_031", "run_039", "run_047"],
-		"avgTokens": 193,
-		"avgLatencyMs": 2511,
-		"successRate": 1
-	},
-	{
-		"edgeId": "edge_tmpl_analyze_cost_breakdown_step_analyze_cost_breakdown_implement_cost_views_step_analyze_cost_breakdown_run_usage_snapshot",
-		"templateId": "tmpl_analyze_cost_breakdown",
-		"fromStepId": "step_analyze_cost_breakdown_implement_cost_views",
-		"toStepId": "step_analyze_cost_breakdown_run_usage_snapshot",
-		"runCount": 3,
-		"runIds": ["run_007", "run_015", "run_047"],
-		"avgTokens": 506,
-		"avgLatencyMs": 3498,
-		"successRate": 1
-	},
-	{
-		"edgeId": "edge_tmpl_stream_weekly_instance_usage_step_stream_weekly_instance_usage_inspect_usage_query_step_stream_weekly_instance_usage_shape_instance_summary_payload",
-		"templateId": "tmpl_stream_weekly_instance_usage",
-		"fromStepId": "step_stream_weekly_instance_usage_inspect_usage_query",
-		"toStepId": "step_stream_weekly_instance_usage_shape_instance_summary_payload",
-		"runCount": 6,
-		"runIds": ["run_008", "run_016", "run_024", "run_032", "run_040", "run_048"],
-		"avgTokens": 1457,
-		"avgLatencyMs": 5868,
-		"successRate": 1
-	},
-	{
-		"edgeId": "edge_tmpl_stream_weekly_instance_usage_step_stream_weekly_instance_usage_shape_instance_summary_payload_step_stream_weekly_instance_usage_write_weekly_usage_endpoint",
-		"templateId": "tmpl_stream_weekly_instance_usage",
-		"fromStepId": "step_stream_weekly_instance_usage_shape_instance_summary_payload",
-		"toStepId": "step_stream_weekly_instance_usage_write_weekly_usage_endpoint",
-		"runCount": 6,
-		"runIds": ["run_008", "run_016", "run_024", "run_032", "run_040", "run_048"],
-		"avgTokens": 168,
-		"avgLatencyMs": 1400,
-		"successRate": 1
-	},
-	{
-		"edgeId": "edge_tmpl_stream_weekly_instance_usage_step_stream_weekly_instance_usage_write_weekly_usage_endpoint_step_stream_weekly_instance_usage_run_weekly_usage_smoke_test",
-		"templateId": "tmpl_stream_weekly_instance_usage",
-		"fromStepId": "step_stream_weekly_instance_usage_write_weekly_usage_endpoint",
-		"toStepId": "step_stream_weekly_instance_usage_run_weekly_usage_smoke_test",
-		"runCount": 5,
-		"runIds": ["run_008", "run_016", "run_024", "run_040", "run_048"],
-		"avgTokens": 577,
-		"avgLatencyMs": 2375,
-		"successRate": 1
-	},
-	{
-		"edgeId": "edge_tmpl_ship_fastapi_instance_endpoints_step_ship_fastapi_instance_endpoints_write_instance_endpoints_step_ship_fastapi_instance_endpoints_adjust_heartbeat_validation",
-		"templateId": "tmpl_ship_fastapi_instance_endpoints",
-		"fromStepId": "step_ship_fastapi_instance_endpoints_write_instance_endpoints",
-		"toStepId": "step_ship_fastapi_instance_endpoints_adjust_heartbeat_validation",
-		"runCount": 4,
-		"runIds": ["run_011", "run_019", "run_027", "run_043"],
-		"avgTokens": 267,
-		"avgLatencyMs": 2377,
-		"successRate": 1
-	},
-	{
-		"edgeId": "edge_tmpl_ship_fastapi_instance_endpoints_step_ship_fastapi_instance_endpoints_adjust_heartbeat_validation_step_ship_fastapi_instance_endpoints_rerun_pytest_instances",
-		"templateId": "tmpl_ship_fastapi_instance_endpoints",
-		"fromStepId": "step_ship_fastapi_instance_endpoints_adjust_heartbeat_validation",
-		"toStepId": "step_ship_fastapi_instance_endpoints_rerun_pytest_instances",
-		"runCount": 4,
-		"runIds": ["run_011", "run_019", "run_027", "run_043"],
-		"avgTokens": 562,
-		"avgLatencyMs": 1918,
-		"successRate": 1
-	},
-	{
-		"edgeId": "edge_tmpl_merge_task_runs_into_dag_step_merge_task_runs_into_dag_implement_step_merge_query_step_merge_task_runs_into_dag_run_dag_merge_tests",
-		"templateId": "tmpl_merge_task_runs_into_dag",
-		"fromStepId": "step_merge_task_runs_into_dag_implement_step_merge_query",
-		"toStepId": "step_merge_task_runs_into_dag_run_dag_merge_tests",
-		"runCount": 2,
-		"runIds": ["run_012", "run_036"],
-		"avgTokens": 212,
-		"avgLatencyMs": 1843,
-		"successRate": 0.5
-	},
-	{
-		"edgeId": "edge_tmpl_visualize_template_dag_step_visualize_template_dag_wire_cytoscape_canvas_step_visualize_template_dag_run_svelte_check_graph",
-		"templateId": "tmpl_visualize_template_dag",
-		"fromStepId": "step_visualize_template_dag_wire_cytoscape_canvas",
-		"toStepId": "step_visualize_template_dag_run_svelte_check_graph",
-		"runCount": 3,
-		"runIds": ["run_013", "run_021", "run_045"],
-		"avgTokens": 495,
-		"avgLatencyMs": 1137,
-		"successRate": 0.67
-	},
-	{
-		"edgeId": "edge_tmpl_audit_risk_scoring_step_audit_risk_scoring_update_scoring_thresholds_step_audit_risk_scoring_run_audit_validation",
-		"templateId": "tmpl_audit_risk_scoring",
-		"fromStepId": "step_audit_risk_scoring_update_scoring_thresholds",
-		"toStepId": "step_audit_risk_scoring_run_audit_validation",
-		"runCount": 4,
-		"runIds": ["run_014", "run_022", "run_030", "run_038"],
-		"avgTokens": 338,
-		"avgLatencyMs": 2444,
-		"successRate": 1
-	},
-	{
-		"edgeId": "edge_tmpl_capture_action_events_step_capture_action_events_wire_event_emitters_step_capture_action_events_patch_retry_semantics",
-		"templateId": "tmpl_capture_action_events",
-		"fromStepId": "step_capture_action_events_wire_event_emitters",
-		"toStepId": "step_capture_action_events_patch_retry_semantics",
-		"runCount": 2,
-		"runIds": ["run_018", "run_042"],
-		"avgTokens": 232,
-		"avgLatencyMs": 932,
-		"successRate": 1
-	},
-	{
-		"edgeId": "edge_tmpl_capture_action_events_step_capture_action_events_patch_retry_semantics_step_capture_action_events_rerun_cargo_test_observer",
-		"templateId": "tmpl_capture_action_events",
-		"fromStepId": "step_capture_action_events_patch_retry_semantics",
-		"toStepId": "step_capture_action_events_rerun_cargo_test_observer",
-		"runCount": 2,
-		"runIds": ["run_018", "run_042"],
-		"avgTokens": 229,
-		"avgLatencyMs": 1813,
-		"successRate": 1
-	},
-	{
-		"edgeId": "edge_tmpl_analyze_cost_breakdown_step_analyze_cost_breakdown_implement_cost_views_step_analyze_cost_breakdown_tighten_token_grouping",
-		"templateId": "tmpl_analyze_cost_breakdown",
-		"fromStepId": "step_analyze_cost_breakdown_implement_cost_views",
-		"toStepId": "step_analyze_cost_breakdown_tighten_token_grouping",
-		"runCount": 3,
-		"runIds": ["run_023", "run_031", "run_039"],
-		"avgTokens": 186,
-		"avgLatencyMs": 3072,
-		"successRate": 1
-	},
-	{
-		"edgeId": "edge_tmpl_analyze_cost_breakdown_step_analyze_cost_breakdown_tighten_token_grouping_step_analyze_cost_breakdown_rerun_usage_snapshot",
-		"templateId": "tmpl_analyze_cost_breakdown",
-		"fromStepId": "step_analyze_cost_breakdown_tighten_token_grouping",
-		"toStepId": "step_analyze_cost_breakdown_rerun_usage_snapshot",
-		"runCount": 3,
-		"runIds": ["run_023", "run_031", "run_039"],
-		"avgTokens": 513,
-		"avgLatencyMs": 2004,
-		"successRate": 1
-	},
-	{
-		"edgeId": "edge_tmpl_create_observer_crate_step_create_observer_crate_write_observer_library_step_create_observer_crate_fix_type_mismatch",
-		"templateId": "tmpl_create_observer_crate",
-		"fromStepId": "step_create_observer_crate_write_observer_library",
-		"toStepId": "step_create_observer_crate_fix_type_mismatch",
-		"runCount": 3,
-		"runIds": ["run_025", "run_041", "run_049"],
-		"avgTokens": 164,
-		"avgLatencyMs": 1807,
-		"successRate": 1
-	},
-	{
-		"edgeId": "edge_tmpl_create_observer_crate_step_create_observer_crate_fix_type_mismatch_step_create_observer_crate_build_final_crate",
-		"templateId": "tmpl_create_observer_crate",
-		"fromStepId": "step_create_observer_crate_fix_type_mismatch",
-		"toStepId": "step_create_observer_crate_build_final_crate",
-		"runCount": 3,
-		"runIds": ["run_025", "run_041", "run_049"],
-		"avgTokens": 467,
-		"avgLatencyMs": 1134,
-		"successRate": 1
-	},
-	{
-		"edgeId": "edge_tmpl_stream_weekly_instance_usage_step_stream_weekly_instance_usage_write_weekly_usage_endpoint_step_stream_weekly_instance_usage_backfill_missing_idle_states",
-		"templateId": "tmpl_stream_weekly_instance_usage",
-		"fromStepId": "step_stream_weekly_instance_usage_write_weekly_usage_endpoint",
-		"toStepId": "step_stream_weekly_instance_usage_backfill_missing_idle_states",
-		"runCount": 1,
-		"runIds": ["run_032"],
-		"avgTokens": 129,
-		"avgLatencyMs": 2302,
-		"successRate": 1
-	},
-	{
-		"edgeId": "edge_tmpl_stream_weekly_instance_usage_step_stream_weekly_instance_usage_backfill_missing_idle_states_step_stream_weekly_instance_usage_rerun_weekly_usage_smoke_test",
-		"templateId": "tmpl_stream_weekly_instance_usage",
-		"fromStepId": "step_stream_weekly_instance_usage_backfill_missing_idle_states",
-		"toStepId": "step_stream_weekly_instance_usage_rerun_weekly_usage_smoke_test",
-		"runCount": 1,
-		"runIds": ["run_032"],
-		"avgTokens": 473,
-		"avgLatencyMs": 1227,
-		"successRate": 1
-	}
+  {
+    "edgeId": "edge_tmpl_implement_user_auth_tmpl_implement_user_auth:read_file:load_root_task_context_tmpl_implement_user_auth:bash:bootstrap_env",
+    "templateId": "tmpl_implement_user_auth",
+    "fromStepId": "tmpl_implement_user_auth:read_file:load_root_task_context",
+    "toStepId": "tmpl_implement_user_auth:bash:bootstrap_env",
+    "runCount": 3,
+    "runIds": [
+      "run_001",
+      "run_013",
+      "run_019"
+    ],
+    "avgTokens": 352,
+    "avgLatencyMs": 7643,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_implement_user_auth_tmpl_implement_user_auth:bash:bootstrap_env_tmpl_implement_user_auth:read_file:read_prisma_schema",
+    "templateId": "tmpl_implement_user_auth",
+    "fromStepId": "tmpl_implement_user_auth:bash:bootstrap_env",
+    "toStepId": "tmpl_implement_user_auth:read_file:read_prisma_schema",
+    "runCount": 3,
+    "runIds": [
+      "run_001",
+      "run_013",
+      "run_019"
+    ],
+    "avgTokens": 179,
+    "avgLatencyMs": 717,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_implement_user_auth_tmpl_implement_user_auth:read_file:read_prisma_schema_tmpl_implement_user_auth:write_file:write_jwt_handler",
+    "templateId": "tmpl_implement_user_auth",
+    "fromStepId": "tmpl_implement_user_auth:read_file:read_prisma_schema",
+    "toStepId": "tmpl_implement_user_auth:write_file:write_jwt_handler",
+    "runCount": 2,
+    "runIds": [
+      "run_001",
+      "run_013"
+    ],
+    "avgTokens": 1151,
+    "avgLatencyMs": 1583,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_implement_user_auth_tmpl_implement_user_auth:write_file:write_jwt_handler_tmpl_implement_user_auth:write_file:write_auth_middleware",
+    "templateId": "tmpl_implement_user_auth",
+    "fromStepId": "tmpl_implement_user_auth:write_file:write_jwt_handler",
+    "toStepId": "tmpl_implement_user_auth:write_file:write_auth_middleware",
+    "runCount": 3,
+    "runIds": [
+      "run_001",
+      "run_013",
+      "run_019"
+    ],
+    "avgTokens": 718,
+    "avgLatencyMs": 1306,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_implement_user_auth_tmpl_implement_user_auth:write_file:write_auth_middleware_tmpl_implement_user_auth:bash:run_unit_tests",
+    "templateId": "tmpl_implement_user_auth",
+    "fromStepId": "tmpl_implement_user_auth:write_file:write_auth_middleware",
+    "toStepId": "tmpl_implement_user_auth:bash:run_unit_tests",
+    "runCount": 2,
+    "runIds": [
+      "run_001",
+      "run_013"
+    ],
+    "avgTokens": 394,
+    "avgLatencyMs": 7277,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_implement_user_auth_tmpl_implement_user_auth:bash:run_unit_tests_tmpl_implement_user_auth:bash:run_integration_tests",
+    "templateId": "tmpl_implement_user_auth",
+    "fromStepId": "tmpl_implement_user_auth:bash:run_unit_tests",
+    "toStepId": "tmpl_implement_user_auth:bash:run_integration_tests",
+    "runCount": 2,
+    "runIds": [
+      "run_001",
+      "run_013"
+    ],
+    "avgTokens": 461,
+    "avgLatencyMs": 8264,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_setup_db_migrations_tmpl_setup_db_migrations:read_file:load_root_task_context_tmpl_setup_db_migrations:read_file:read_schema",
+    "templateId": "tmpl_setup_db_migrations",
+    "fromStepId": "tmpl_setup_db_migrations:read_file:load_root_task_context",
+    "toStepId": "tmpl_setup_db_migrations:read_file:read_schema",
+    "runCount": 4,
+    "runIds": [
+      "run_002",
+      "run_008",
+      "run_014",
+      "run_020"
+    ],
+    "avgTokens": 310,
+    "avgLatencyMs": 1272,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_setup_db_migrations_tmpl_setup_db_migrations:read_file:read_schema_tmpl_setup_db_migrations:grep:search_existing_models",
+    "templateId": "tmpl_setup_db_migrations",
+    "fromStepId": "tmpl_setup_db_migrations:read_file:read_schema",
+    "toStepId": "tmpl_setup_db_migrations:grep:search_existing_models",
+    "runCount": 2,
+    "runIds": [
+      "run_002",
+      "run_014"
+    ],
+    "avgTokens": 216,
+    "avgLatencyMs": 1027,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_setup_db_migrations_tmpl_setup_db_migrations:grep:search_existing_models_tmpl_setup_db_migrations:bash:check_db_version",
+    "templateId": "tmpl_setup_db_migrations",
+    "fromStepId": "tmpl_setup_db_migrations:grep:search_existing_models",
+    "toStepId": "tmpl_setup_db_migrations:bash:check_db_version",
+    "runCount": 2,
+    "runIds": [
+      "run_002",
+      "run_014"
+    ],
+    "avgTokens": 448,
+    "avgLatencyMs": 5273,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_setup_db_migrations_tmpl_setup_db_migrations:bash:check_db_version_tmpl_setup_db_migrations:write_file:write_migration_file",
+    "templateId": "tmpl_setup_db_migrations",
+    "fromStepId": "tmpl_setup_db_migrations:bash:check_db_version",
+    "toStepId": "tmpl_setup_db_migrations:write_file:write_migration_file",
+    "runCount": 4,
+    "runIds": [
+      "run_002",
+      "run_008",
+      "run_014",
+      "run_020"
+    ],
+    "avgTokens": 484,
+    "avgLatencyMs": 1857,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_setup_db_migrations_tmpl_setup_db_migrations:write_file:write_migration_file_tmpl_setup_db_migrations:read_file:verify_migration_sql",
+    "templateId": "tmpl_setup_db_migrations",
+    "fromStepId": "tmpl_setup_db_migrations:write_file:write_migration_file",
+    "toStepId": "tmpl_setup_db_migrations:read_file:verify_migration_sql",
+    "runCount": 2,
+    "runIds": [
+      "run_002",
+      "run_014"
+    ],
+    "avgTokens": 321,
+    "avgLatencyMs": 871,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_setup_db_migrations_tmpl_setup_db_migrations:read_file:verify_migration_sql_tmpl_setup_db_migrations:bash:run_migration",
+    "templateId": "tmpl_setup_db_migrations",
+    "fromStepId": "tmpl_setup_db_migrations:read_file:verify_migration_sql",
+    "toStepId": "tmpl_setup_db_migrations:bash:run_migration",
+    "runCount": 2,
+    "runIds": [
+      "run_002",
+      "run_014"
+    ],
+    "avgTokens": 553,
+    "avgLatencyMs": 4302,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_setup_db_migrations_tmpl_setup_db_migrations:bash:run_migration_tmpl_setup_db_migrations:bash:verify_schema",
+    "templateId": "tmpl_setup_db_migrations",
+    "fromStepId": "tmpl_setup_db_migrations:bash:run_migration",
+    "toStepId": "tmpl_setup_db_migrations:bash:verify_schema",
+    "runCount": 4,
+    "runIds": [
+      "run_002",
+      "run_008",
+      "run_014",
+      "run_020"
+    ],
+    "avgTokens": 415,
+    "avgLatencyMs": 4574,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_deploy_docker_service_tmpl_deploy_docker_service:read_file:load_root_task_context_tmpl_deploy_docker_service:bash:pull_docker_image",
+    "templateId": "tmpl_deploy_docker_service",
+    "fromStepId": "tmpl_deploy_docker_service:read_file:load_root_task_context",
+    "toStepId": "tmpl_deploy_docker_service:bash:pull_docker_image",
+    "runCount": 4,
+    "runIds": [
+      "run_003",
+      "run_009",
+      "run_015",
+      "run_021"
+    ],
+    "avgTokens": 389,
+    "avgLatencyMs": 4670,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_deploy_docker_service_tmpl_deploy_docker_service:bash:pull_docker_image_tmpl_deploy_docker_service:bash:stop_old_container",
+    "templateId": "tmpl_deploy_docker_service",
+    "fromStepId": "tmpl_deploy_docker_service:bash:pull_docker_image",
+    "toStepId": "tmpl_deploy_docker_service:bash:stop_old_container",
+    "runCount": 4,
+    "runIds": [
+      "run_003",
+      "run_009",
+      "run_015",
+      "run_021"
+    ],
+    "avgTokens": 315,
+    "avgLatencyMs": 5650,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_deploy_docker_service_tmpl_deploy_docker_service:bash:stop_old_container_tmpl_deploy_docker_service:bash:check_port_availability",
+    "templateId": "tmpl_deploy_docker_service",
+    "fromStepId": "tmpl_deploy_docker_service:bash:stop_old_container",
+    "toStepId": "tmpl_deploy_docker_service:bash:check_port_availability",
+    "runCount": 2,
+    "runIds": [
+      "run_003",
+      "run_009"
+    ],
+    "avgTokens": 237,
+    "avgLatencyMs": 5088,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_deploy_docker_service_tmpl_deploy_docker_service:bash:check_port_availability_tmpl_deploy_docker_service:bash:start_new_container",
+    "templateId": "tmpl_deploy_docker_service",
+    "fromStepId": "tmpl_deploy_docker_service:bash:check_port_availability",
+    "toStepId": "tmpl_deploy_docker_service:bash:start_new_container",
+    "runCount": 2,
+    "runIds": [
+      "run_003",
+      "run_009"
+    ],
+    "avgTokens": 433,
+    "avgLatencyMs": 2742,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_deploy_docker_service_tmpl_deploy_docker_service:bash:start_new_container_tmpl_deploy_docker_service:bash:health_check",
+    "templateId": "tmpl_deploy_docker_service",
+    "fromStepId": "tmpl_deploy_docker_service:bash:start_new_container",
+    "toStepId": "tmpl_deploy_docker_service:bash:health_check",
+    "runCount": 4,
+    "runIds": [
+      "run_003",
+      "run_009",
+      "run_015",
+      "run_021"
+    ],
+    "avgTokens": 242,
+    "avgLatencyMs": 6046,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_deploy_docker_service_tmpl_deploy_docker_service:bash:health_check_tmpl_deploy_docker_service:bash:reload_nginx",
+    "templateId": "tmpl_deploy_docker_service",
+    "fromStepId": "tmpl_deploy_docker_service:bash:health_check",
+    "toStepId": "tmpl_deploy_docker_service:bash:reload_nginx",
+    "runCount": 3,
+    "runIds": [
+      "run_003",
+      "run_009",
+      "run_021"
+    ],
+    "avgTokens": 329,
+    "avgLatencyMs": 4242,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_run_test_suite_tmpl_run_test_suite:read_file:load_root_task_context_tmpl_run_test_suite:read_file:read_test_config",
+    "templateId": "tmpl_run_test_suite",
+    "fromStepId": "tmpl_run_test_suite:read_file:load_root_task_context",
+    "toStepId": "tmpl_run_test_suite:read_file:read_test_config",
+    "runCount": 4,
+    "runIds": [
+      "run_004",
+      "run_010",
+      "run_016",
+      "run_022"
+    ],
+    "avgTokens": 253,
+    "avgLatencyMs": 907,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_run_test_suite_tmpl_run_test_suite:read_file:read_test_config_tmpl_run_test_suite:grep:find_test_files",
+    "templateId": "tmpl_run_test_suite",
+    "fromStepId": "tmpl_run_test_suite:read_file:read_test_config",
+    "toStepId": "tmpl_run_test_suite:grep:find_test_files",
+    "runCount": 2,
+    "runIds": [
+      "run_004",
+      "run_016"
+    ],
+    "avgTokens": 222,
+    "avgLatencyMs": 998,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_run_test_suite_tmpl_run_test_suite:grep:find_test_files_tmpl_run_test_suite:bash:install_dependencies",
+    "templateId": "tmpl_run_test_suite",
+    "fromStepId": "tmpl_run_test_suite:grep:find_test_files",
+    "toStepId": "tmpl_run_test_suite:bash:install_dependencies",
+    "runCount": 2,
+    "runIds": [
+      "run_004",
+      "run_016"
+    ],
+    "avgTokens": 362,
+    "avgLatencyMs": 6887,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_run_test_suite_tmpl_run_test_suite:bash:install_dependencies_tmpl_run_test_suite:bash:run_unit_tests",
+    "templateId": "tmpl_run_test_suite",
+    "fromStepId": "tmpl_run_test_suite:bash:install_dependencies",
+    "toStepId": "tmpl_run_test_suite:bash:run_unit_tests",
+    "runCount": 2,
+    "runIds": [
+      "run_004",
+      "run_010"
+    ],
+    "avgTokens": 406,
+    "avgLatencyMs": 8332,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_run_test_suite_tmpl_run_test_suite:bash:run_unit_tests_tmpl_run_test_suite:bash:run_e2e_tests",
+    "templateId": "tmpl_run_test_suite",
+    "fromStepId": "tmpl_run_test_suite:bash:run_unit_tests",
+    "toStepId": "tmpl_run_test_suite:bash:run_e2e_tests",
+    "runCount": 2,
+    "runIds": [
+      "run_004",
+      "run_010"
+    ],
+    "avgTokens": 285,
+    "avgLatencyMs": 8380,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_run_test_suite_tmpl_run_test_suite:bash:run_e2e_tests_tmpl_run_test_suite:bash:generate_coverage_report",
+    "templateId": "tmpl_run_test_suite",
+    "fromStepId": "tmpl_run_test_suite:bash:run_e2e_tests",
+    "toStepId": "tmpl_run_test_suite:bash:generate_coverage_report",
+    "runCount": 2,
+    "runIds": [
+      "run_004",
+      "run_010"
+    ],
+    "avgTokens": 384,
+    "avgLatencyMs": 4649,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_analyze_bundle_size_tmpl_analyze_bundle_size:read_file:load_root_task_context_tmpl_analyze_bundle_size:bash:build_production_bundle",
+    "templateId": "tmpl_analyze_bundle_size",
+    "fromStepId": "tmpl_analyze_bundle_size:read_file:load_root_task_context",
+    "toStepId": "tmpl_analyze_bundle_size:bash:build_production_bundle",
+    "runCount": 4,
+    "runIds": [
+      "run_005",
+      "run_011",
+      "run_017",
+      "run_023"
+    ],
+    "avgTokens": 431,
+    "avgLatencyMs": 3674,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_analyze_bundle_size_tmpl_analyze_bundle_size:bash:build_production_bundle_tmpl_analyze_bundle_size:bash:run_bundle_analyzer",
+    "templateId": "tmpl_analyze_bundle_size",
+    "fromStepId": "tmpl_analyze_bundle_size:bash:build_production_bundle",
+    "toStepId": "tmpl_analyze_bundle_size:bash:run_bundle_analyzer",
+    "runCount": 5,
+    "runIds": [
+      "run_005",
+      "run_011",
+      "run_017",
+      "run_023",
+      "run_023"
+    ],
+    "avgTokens": 281,
+    "avgLatencyMs": 5836,
+    "successRate": 0.4
+  },
+  {
+    "edgeId": "edge_tmpl_analyze_bundle_size_tmpl_analyze_bundle_size:bash:run_bundle_analyzer_tmpl_analyze_bundle_size:read_file:read_partial_report",
+    "templateId": "tmpl_analyze_bundle_size",
+    "fromStepId": "tmpl_analyze_bundle_size:bash:run_bundle_analyzer",
+    "toStepId": "tmpl_analyze_bundle_size:read_file:read_partial_report",
+    "runCount": 2,
+    "runIds": [
+      "run_005",
+      "run_011"
+    ],
+    "avgTokens": 281,
+    "avgLatencyMs": 887,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_fix_type_errors_tmpl_fix_type_errors:read_file:load_root_task_context_tmpl_fix_type_errors:bash:run_tsc_check",
+    "templateId": "tmpl_fix_type_errors",
+    "fromStepId": "tmpl_fix_type_errors:read_file:load_root_task_context",
+    "toStepId": "tmpl_fix_type_errors:bash:run_tsc_check",
+    "runCount": 4,
+    "runIds": [
+      "run_006",
+      "run_012",
+      "run_018",
+      "run_024"
+    ],
+    "avgTokens": 287,
+    "avgLatencyMs": 4176,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_fix_type_errors_tmpl_fix_type_errors:bash:run_tsc_check_tmpl_fix_type_errors:grep:find_error_locations",
+    "templateId": "tmpl_fix_type_errors",
+    "fromStepId": "tmpl_fix_type_errors:bash:run_tsc_check",
+    "toStepId": "tmpl_fix_type_errors:grep:find_error_locations",
+    "runCount": 4,
+    "runIds": [
+      "run_006",
+      "run_012",
+      "run_018",
+      "run_024"
+    ],
+    "avgTokens": 249,
+    "avgLatencyMs": 517,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_fix_type_errors_tmpl_fix_type_errors:grep:find_error_locations_tmpl_fix_type_errors:read_file:read_file_with_errors",
+    "templateId": "tmpl_fix_type_errors",
+    "fromStepId": "tmpl_fix_type_errors:grep:find_error_locations",
+    "toStepId": "tmpl_fix_type_errors:read_file:read_file_with_errors",
+    "runCount": 1,
+    "runIds": [
+      "run_006"
+    ],
+    "avgTokens": 161,
+    "avgLatencyMs": 287,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_fix_type_errors_tmpl_fix_type_errors:read_file:read_file_with_errors_tmpl_fix_type_errors:write_file:apply_type_fixes",
+    "templateId": "tmpl_fix_type_errors",
+    "fromStepId": "tmpl_fix_type_errors:read_file:read_file_with_errors",
+    "toStepId": "tmpl_fix_type_errors:write_file:apply_type_fixes",
+    "runCount": 1,
+    "runIds": [
+      "run_006"
+    ],
+    "avgTokens": 731,
+    "avgLatencyMs": 1766,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_fix_type_errors_tmpl_fix_type_errors:write_file:apply_type_fixes_tmpl_fix_type_errors:bash:verify_tsc_clean",
+    "templateId": "tmpl_fix_type_errors",
+    "fromStepId": "tmpl_fix_type_errors:write_file:apply_type_fixes",
+    "toStepId": "tmpl_fix_type_errors:bash:verify_tsc_clean",
+    "runCount": 4,
+    "runIds": [
+      "run_006",
+      "run_012",
+      "run_018",
+      "run_024"
+    ],
+    "avgTokens": 297,
+    "avgLatencyMs": 6671,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_implement_user_auth_tmpl_implement_user_auth:read_file:load_root_task_context_tmpl_implement_user_auth:grep:search_auth_patterns",
+    "templateId": "tmpl_implement_user_auth",
+    "fromStepId": "tmpl_implement_user_auth:read_file:load_root_task_context",
+    "toStepId": "tmpl_implement_user_auth:grep:search_auth_patterns",
+    "runCount": 1,
+    "runIds": [
+      "run_007"
+    ],
+    "avgTokens": 222,
+    "avgLatencyMs": 236,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_implement_user_auth_tmpl_implement_user_auth:grep:search_auth_patterns_tmpl_implement_user_auth:read_file:read_existing_auth",
+    "templateId": "tmpl_implement_user_auth",
+    "fromStepId": "tmpl_implement_user_auth:grep:search_auth_patterns",
+    "toStepId": "tmpl_implement_user_auth:read_file:read_existing_auth",
+    "runCount": 1,
+    "runIds": [
+      "run_007"
+    ],
+    "avgTokens": 250,
+    "avgLatencyMs": 1073,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_implement_user_auth_tmpl_implement_user_auth:read_file:read_existing_auth_tmpl_implement_user_auth:write_file:write_changes",
+    "templateId": "tmpl_implement_user_auth",
+    "fromStepId": "tmpl_implement_user_auth:read_file:read_existing_auth",
+    "toStepId": "tmpl_implement_user_auth:write_file:write_changes",
+    "runCount": 1,
+    "runIds": [
+      "run_007"
+    ],
+    "avgTokens": 907,
+    "avgLatencyMs": 2431,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_implement_user_auth_tmpl_implement_user_auth:write_file:write_changes_tmpl_implement_user_auth:read_file:verify_diff",
+    "templateId": "tmpl_implement_user_auth",
+    "fromStepId": "tmpl_implement_user_auth:write_file:write_changes",
+    "toStepId": "tmpl_implement_user_auth:read_file:verify_diff",
+    "runCount": 1,
+    "runIds": [
+      "run_007"
+    ],
+    "avgTokens": 120,
+    "avgLatencyMs": 170,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_implement_user_auth_tmpl_implement_user_auth:read_file:verify_diff_tmpl_implement_user_auth:bash:run_tests",
+    "templateId": "tmpl_implement_user_auth",
+    "fromStepId": "tmpl_implement_user_auth:read_file:verify_diff",
+    "toStepId": "tmpl_implement_user_auth:bash:run_tests",
+    "runCount": 1,
+    "runIds": [
+      "run_007"
+    ],
+    "avgTokens": 182,
+    "avgLatencyMs": 9140,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_setup_db_migrations_tmpl_setup_db_migrations:read_file:read_schema_tmpl_setup_db_migrations:bash:check_db_version",
+    "templateId": "tmpl_setup_db_migrations",
+    "fromStepId": "tmpl_setup_db_migrations:read_file:read_schema",
+    "toStepId": "tmpl_setup_db_migrations:bash:check_db_version",
+    "runCount": 2,
+    "runIds": [
+      "run_008",
+      "run_020"
+    ],
+    "avgTokens": 321,
+    "avgLatencyMs": 5067,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_setup_db_migrations_tmpl_setup_db_migrations:write_file:write_migration_file_tmpl_setup_db_migrations:bash:run_migration",
+    "templateId": "tmpl_setup_db_migrations",
+    "fromStepId": "tmpl_setup_db_migrations:write_file:write_migration_file",
+    "toStepId": "tmpl_setup_db_migrations:bash:run_migration",
+    "runCount": 2,
+    "runIds": [
+      "run_008",
+      "run_020"
+    ],
+    "avgTokens": 436,
+    "avgLatencyMs": 4876,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_setup_db_migrations_tmpl_setup_db_migrations:bash:verify_schema_tmpl_setup_db_migrations:grep:grep_migration_log",
+    "templateId": "tmpl_setup_db_migrations",
+    "fromStepId": "tmpl_setup_db_migrations:bash:verify_schema",
+    "toStepId": "tmpl_setup_db_migrations:grep:grep_migration_log",
+    "runCount": 2,
+    "runIds": [
+      "run_008",
+      "run_020"
+    ],
+    "avgTokens": 242,
+    "avgLatencyMs": 1195,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_run_test_suite_tmpl_run_test_suite:read_file:read_test_config_tmpl_run_test_suite:bash:install_dependencies",
+    "templateId": "tmpl_run_test_suite",
+    "fromStepId": "tmpl_run_test_suite:read_file:read_test_config",
+    "toStepId": "tmpl_run_test_suite:bash:install_dependencies",
+    "runCount": 2,
+    "runIds": [
+      "run_010",
+      "run_022"
+    ],
+    "avgTokens": 299,
+    "avgLatencyMs": 5027,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_fix_type_errors_tmpl_fix_type_errors:grep:find_error_locations_tmpl_fix_type_errors:read_file:read_types_index",
+    "templateId": "tmpl_fix_type_errors",
+    "fromStepId": "tmpl_fix_type_errors:grep:find_error_locations",
+    "toStepId": "tmpl_fix_type_errors:read_file:read_types_index",
+    "runCount": 3,
+    "runIds": [
+      "run_012",
+      "run_018",
+      "run_024"
+    ],
+    "avgTokens": 221,
+    "avgLatencyMs": 717,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_fix_type_errors_tmpl_fix_type_errors:read_file:read_types_index_tmpl_fix_type_errors:read_file:read_api_types",
+    "templateId": "tmpl_fix_type_errors",
+    "fromStepId": "tmpl_fix_type_errors:read_file:read_types_index",
+    "toStepId": "tmpl_fix_type_errors:read_file:read_api_types",
+    "runCount": 3,
+    "runIds": [
+      "run_012",
+      "run_018",
+      "run_024"
+    ],
+    "avgTokens": 156,
+    "avgLatencyMs": 720,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_fix_type_errors_tmpl_fix_type_errors:read_file:read_api_types_tmpl_fix_type_errors:write_file:apply_type_fixes",
+    "templateId": "tmpl_fix_type_errors",
+    "fromStepId": "tmpl_fix_type_errors:read_file:read_api_types",
+    "toStepId": "tmpl_fix_type_errors:write_file:apply_type_fixes",
+    "runCount": 3,
+    "runIds": [
+      "run_012",
+      "run_018",
+      "run_024"
+    ],
+    "avgTokens": 568,
+    "avgLatencyMs": 1514,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_deploy_docker_service_tmpl_deploy_docker_service:bash:stop_old_container_tmpl_deploy_docker_service:bash:start_new_container",
+    "templateId": "tmpl_deploy_docker_service",
+    "fromStepId": "tmpl_deploy_docker_service:bash:stop_old_container",
+    "toStepId": "tmpl_deploy_docker_service:bash:start_new_container",
+    "runCount": 2,
+    "runIds": [
+      "run_015",
+      "run_021"
+    ],
+    "avgTokens": 374,
+    "avgLatencyMs": 6447,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_deploy_docker_service_tmpl_deploy_docker_service:bash:health_check_tmpl_deploy_docker_service:bash:tail_deploy_logs",
+    "templateId": "tmpl_deploy_docker_service",
+    "fromStepId": "tmpl_deploy_docker_service:bash:health_check",
+    "toStepId": "tmpl_deploy_docker_service:bash:tail_deploy_logs",
+    "runCount": 1,
+    "runIds": [
+      "run_015"
+    ],
+    "avgTokens": 175,
+    "avgLatencyMs": 7763,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_run_test_suite_tmpl_run_test_suite:bash:install_dependencies_tmpl_run_test_suite:bash:run_test_suite",
+    "templateId": "tmpl_run_test_suite",
+    "fromStepId": "tmpl_run_test_suite:bash:install_dependencies",
+    "toStepId": "tmpl_run_test_suite:bash:run_test_suite",
+    "runCount": 2,
+    "runIds": [
+      "run_016",
+      "run_022"
+    ],
+    "avgTokens": 402,
+    "avgLatencyMs": 6833,
+    "successRate": 0.5
+  },
+  {
+    "edgeId": "edge_tmpl_run_test_suite_tmpl_run_test_suite:bash:run_test_suite_tmpl_run_test_suite:read_file:read_test_output",
+    "templateId": "tmpl_run_test_suite",
+    "fromStepId": "tmpl_run_test_suite:bash:run_test_suite",
+    "toStepId": "tmpl_run_test_suite:read_file:read_test_output",
+    "runCount": 1,
+    "runIds": [
+      "run_016"
+    ],
+    "avgTokens": 366,
+    "avgLatencyMs": 483,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_bypass_tmpl_run_test_suite_tmpl_run_test_suite:bash:install_dependencies_tmpl_run_test_suite:read_file:read_test_output",
+    "templateId": "tmpl_run_test_suite",
+    "fromStepId": "tmpl_run_test_suite:bash:install_dependencies",
+    "toStepId": "tmpl_run_test_suite:read_file:read_test_output",
+    "runCount": 1,
+    "runIds": [
+      "run_016"
+    ],
+    "avgTokens": 366,
+    "avgLatencyMs": 483,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_run_test_suite_tmpl_run_test_suite:read_file:read_test_output_tmpl_run_test_suite:write_file:fix_failing_test",
+    "templateId": "tmpl_run_test_suite",
+    "fromStepId": "tmpl_run_test_suite:read_file:read_test_output",
+    "toStepId": "tmpl_run_test_suite:write_file:fix_failing_test",
+    "runCount": 1,
+    "runIds": [
+      "run_016"
+    ],
+    "avgTokens": 619,
+    "avgLatencyMs": 432,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_run_test_suite_tmpl_run_test_suite:write_file:fix_failing_test_tmpl_run_test_suite:bash:run_test_suite",
+    "templateId": "tmpl_run_test_suite",
+    "fromStepId": "tmpl_run_test_suite:write_file:fix_failing_test",
+    "toStepId": "tmpl_run_test_suite:bash:run_test_suite",
+    "runCount": 1,
+    "runIds": [
+      "run_016"
+    ],
+    "avgTokens": 481,
+    "avgLatencyMs": 6839,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_run_test_suite_tmpl_run_test_suite:bash:run_test_suite_tmpl_run_test_suite:bash:generate_coverage_report",
+    "templateId": "tmpl_run_test_suite",
+    "fromStepId": "tmpl_run_test_suite:bash:run_test_suite",
+    "toStepId": "tmpl_run_test_suite:bash:generate_coverage_report",
+    "runCount": 2,
+    "runIds": [
+      "run_016",
+      "run_022"
+    ],
+    "avgTokens": 495,
+    "avgLatencyMs": 2735,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_analyze_bundle_size_tmpl_analyze_bundle_size:bash:run_bundle_analyzer_tmpl_analyze_bundle_size:read_file:read_analysis_report",
+    "templateId": "tmpl_analyze_bundle_size",
+    "fromStepId": "tmpl_analyze_bundle_size:bash:run_bundle_analyzer",
+    "toStepId": "tmpl_analyze_bundle_size:read_file:read_analysis_report",
+    "runCount": 2,
+    "runIds": [
+      "run_017",
+      "run_023"
+    ],
+    "avgTokens": 262,
+    "avgLatencyMs": 1300,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_analyze_bundle_size_tmpl_analyze_bundle_size:read_file:read_analysis_report_tmpl_analyze_bundle_size:write_file:write_optimization_notes",
+    "templateId": "tmpl_analyze_bundle_size",
+    "fromStepId": "tmpl_analyze_bundle_size:read_file:read_analysis_report",
+    "toStepId": "tmpl_analyze_bundle_size:write_file:write_optimization_notes",
+    "runCount": 1,
+    "runIds": [
+      "run_017"
+    ],
+    "avgTokens": 401,
+    "avgLatencyMs": 2288,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_analyze_bundle_size_tmpl_analyze_bundle_size:write_file:write_optimization_notes_tmpl_analyze_bundle_size:bash:compare_with_baseline",
+    "templateId": "tmpl_analyze_bundle_size",
+    "fromStepId": "tmpl_analyze_bundle_size:write_file:write_optimization_notes",
+    "toStepId": "tmpl_analyze_bundle_size:bash:compare_with_baseline",
+    "runCount": 1,
+    "runIds": [
+      "run_017"
+    ],
+    "avgTokens": 178,
+    "avgLatencyMs": 4698,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_implement_user_auth_tmpl_implement_user_auth:read_file:read_prisma_schema_tmpl_implement_user_auth:read_file:read_existing_auth",
+    "templateId": "tmpl_implement_user_auth",
+    "fromStepId": "tmpl_implement_user_auth:read_file:read_prisma_schema",
+    "toStepId": "tmpl_implement_user_auth:read_file:read_existing_auth",
+    "runCount": 1,
+    "runIds": [
+      "run_019"
+    ],
+    "avgTokens": 98,
+    "avgLatencyMs": 1614,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_implement_user_auth_tmpl_implement_user_auth:read_file:read_existing_auth_tmpl_implement_user_auth:write_file:write_jwt_handler",
+    "templateId": "tmpl_implement_user_auth",
+    "fromStepId": "tmpl_implement_user_auth:read_file:read_existing_auth",
+    "toStepId": "tmpl_implement_user_auth:write_file:write_jwt_handler",
+    "runCount": 1,
+    "runIds": [
+      "run_019"
+    ],
+    "avgTokens": 940,
+    "avgLatencyMs": 2017,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_implement_user_auth_tmpl_implement_user_auth:write_file:write_auth_middleware_tmpl_implement_user_auth:write_file:write_auth_routes",
+    "templateId": "tmpl_implement_user_auth",
+    "fromStepId": "tmpl_implement_user_auth:write_file:write_auth_middleware",
+    "toStepId": "tmpl_implement_user_auth:write_file:write_auth_routes",
+    "runCount": 1,
+    "runIds": [
+      "run_019"
+    ],
+    "avgTokens": 475,
+    "avgLatencyMs": 2504,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_implement_user_auth_tmpl_implement_user_auth:write_file:write_auth_routes_tmpl_implement_user_auth:bash:run_test_suite",
+    "templateId": "tmpl_implement_user_auth",
+    "fromStepId": "tmpl_implement_user_auth:write_file:write_auth_routes",
+    "toStepId": "tmpl_implement_user_auth:bash:run_test_suite",
+    "runCount": 1,
+    "runIds": [
+      "run_019"
+    ],
+    "avgTokens": 291,
+    "avgLatencyMs": 9236,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_deploy_docker_service_tmpl_deploy_docker_service:bash:reload_nginx_tmpl_deploy_docker_service:bash:tail_deploy_logs",
+    "templateId": "tmpl_deploy_docker_service",
+    "fromStepId": "tmpl_deploy_docker_service:bash:reload_nginx",
+    "toStepId": "tmpl_deploy_docker_service:bash:tail_deploy_logs",
+    "runCount": 1,
+    "runIds": [
+      "run_021"
+    ],
+    "avgTokens": 181,
+    "avgLatencyMs": 4762,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_analyze_bundle_size_tmpl_analyze_bundle_size:bash:run_bundle_analyzer_tmpl_analyze_bundle_size:read_file:read_build_log",
+    "templateId": "tmpl_analyze_bundle_size",
+    "fromStepId": "tmpl_analyze_bundle_size:bash:run_bundle_analyzer",
+    "toStepId": "tmpl_analyze_bundle_size:read_file:read_build_log",
+    "runCount": 1,
+    "runIds": [
+      "run_023"
+    ],
+    "avgTokens": 271,
+    "avgLatencyMs": 298,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_bypass_tmpl_analyze_bundle_size_tmpl_analyze_bundle_size:bash:build_production_bundle_tmpl_analyze_bundle_size:read_file:read_build_log",
+    "templateId": "tmpl_analyze_bundle_size",
+    "fromStepId": "tmpl_analyze_bundle_size:bash:build_production_bundle",
+    "toStepId": "tmpl_analyze_bundle_size:read_file:read_build_log",
+    "runCount": 1,
+    "runIds": [
+      "run_023"
+    ],
+    "avgTokens": 271,
+    "avgLatencyMs": 298,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_analyze_bundle_size_tmpl_analyze_bundle_size:read_file:read_build_log_tmpl_analyze_bundle_size:write_file:fix_vite_config",
+    "templateId": "tmpl_analyze_bundle_size",
+    "fromStepId": "tmpl_analyze_bundle_size:read_file:read_build_log",
+    "toStepId": "tmpl_analyze_bundle_size:write_file:fix_vite_config",
+    "runCount": 1,
+    "runIds": [
+      "run_023"
+    ],
+    "avgTokens": 661,
+    "avgLatencyMs": 1686,
+    "successRate": 1
+  },
+  {
+    "edgeId": "edge_tmpl_analyze_bundle_size_tmpl_analyze_bundle_size:write_file:fix_vite_config_tmpl_analyze_bundle_size:bash:build_production_bundle",
+    "templateId": "tmpl_analyze_bundle_size",
+    "fromStepId": "tmpl_analyze_bundle_size:write_file:fix_vite_config",
+    "toStepId": "tmpl_analyze_bundle_size:bash:build_production_bundle",
+    "runCount": 1,
+    "runIds": [
+      "run_023"
+    ],
+    "avgTokens": 166,
+    "avgLatencyMs": 7870,
+    "successRate": 1
+  }
 ]
