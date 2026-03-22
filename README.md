@@ -82,7 +82,7 @@ current source of truth.
 
 ## Related Public Repo
 
-[`meetrk/memoriaclaw`](https://github.com/meetrk/memoriaclaw) is the public
+[`meetrk/memoriaclaw`](https://github.com/aFlamee/memoriaclaw) is the public
 agent/runtime side that is relevant to Memoria. It is a public fork of
 `openclaw/openclaw`, and it represents the kind of agent runtime Memoria is
 built to observe: a process that can register instances, open sessions, report
